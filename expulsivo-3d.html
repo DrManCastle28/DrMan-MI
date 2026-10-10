@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Expulsivo en 3D</title>
+<meta name="description" content="Los movimientos cardinales del parto en occipito izquierda transversa, dentro de una pelvis que puedes girar.">
+</head><body>
+<style>
+.pf-bar{max-width:1320px;margin:0 auto 14px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 16px;font:500 13px/1.4 'IBM Plex Sans','Segoe UI',Arial,sans-serif}
+.pf-bar a{color:var(--accent,#0d6a7e);text-decoration:none;font-weight:600}
+.pf-bar a:hover{text-decoration:underline}
+.pf-bar span{color:var(--muted,#55626b);max-width:80ch}
+</style>
+<nav class="pf-bar" aria-label="Sitio"><a href="./">← Todos los recursos</a><span>Material educativo esquemático para estudiantes e internos de medicina. No sustituye el protocolo de tu hospital, la indicación de tu adscrito ni el criterio clínico.</span></nav>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Literata:opsz,wght@7..72,500;7..72,700&display=swap">
+<style>
+/* Layout: visor 3D a la izquierda como "campo quirúrgico", panel clínico a la derecha que se apila debajo en móvil */
+:root{
+  --bg:#f2f4f3; --surface:#ffffff; --ink:#17222a; --muted:#55626b; --line:#d5dbdb;
+  --accent:#0d6a7e; --accent-ink:#ffffff; --accent-soft:#dcecef; --stage:#e3e9e9; --warn:#9c4527;
+  --display:'Literata', Georgia, serif; --body:'IBM Plex Sans', 'Segoe UI', Arial, sans-serif; --mono:'IBM Plex Mono', Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1417; --surface:#162026; --ink:#e5ecee; --muted:#9aa8ae; --line:#29363c;
+  --accent:#55b6cb; --accent-ink:#0a1417; --accent-soft:#1b3138; --stage:#111a1e; --warn:#e2906f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1417; --surface:#162026; --ink:#e5ecee; --muted:#9aa8ae; --line:#29363c;
+  --accent:#55b6cb; --accent-ink:#0a1417; --accent-soft:#1b3138; --stage:#111a1e; --warn:#e2906f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;padding:20px 16px 32px}
+.wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(24px,3.2vw,34px);line-height:1.15;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:0;max-width:62ch}
+.grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.viewer{position:relative;background:var(--stage);border:1px solid var(--line);border-radius:10px;overflow:hidden;height:clamp(340px,64vh,680px)}
+.viewer canvas{display:block;width:100%;height:100%;touch-action:none}
+.labels{position:absolute;inset:0;pointer-events:none}
+.lbl{position:absolute;left:0;top:0;font:500 11.5px/1.2 var(--mono);color:var(--ink);background:color-mix(in srgb,var(--surface) 82%,transparent);border:1px solid var(--line);padding:2px 6px;border-radius:4px;white-space:nowrap;letter-spacing:.02em}
+.lbl.key{border-color:var(--accent);color:var(--accent)}
+.labels.off{display:none}
+.hud{position:absolute;left:12px;top:12px;display:flex;flex-direction:column;gap:2px;font-family:var(--mono);font-size:12px;color:var(--muted);pointer-events:none}
+.hud b{font-weight:500;color:var(--ink);font-size:13px}
+.views{position:absolute;right:10px;top:10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;max-width:70%}
+.chip{font:500 12px/1 var(--body);background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:7px 11px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chip:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.transport{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.btn{font:600 13px/1 var(--body);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:9px 12px;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);min-width:96px}
+.scrub{flex:1 1 220px;min-width:0;accent-color:var(--accent)}
+.toggles{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--muted)}
+.toggles label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.eyebrow{font:500 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0}
+.panel h2{font-family:var(--display);font-weight:700;font-size:26px;line-height:1.15;margin:4px 0 0}
+.block h3{font:600 12px/1.2 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+.block p{margin:0}
+.block.do{background:var(--accent-soft);border-radius:8px;padding:12px 14px}
+.block.do h3{color:var(--accent)}
+.station{display:flex;flex-direction:column;gap:6px}
+.gauge{position:relative;height:28px;border-radius:6px;background:linear-gradient(90deg,var(--line) 0 50%,var(--accent-soft) 50% 100%)}
+.gauge .tick{position:absolute;top:0;bottom:0;width:1px;background:var(--muted);opacity:.45}
+.gauge .zero{opacity:1;width:2px;background:var(--ink)}
+.gauge .mark{position:absolute;top:3px;width:22px;height:22px;margin-left:-11px;border-radius:50%;background:var(--accent);border:2px solid var(--surface)}
+.gscale{display:flex;justify-content:space-between;font:400 11px/1 var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+ol.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;counter-reset:s}
+ol.steps li{counter-increment:s}
+ol.steps button{width:100%;text-align:left;font:500 12.5px/1.25 var(--body);background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 9px;cursor:pointer;display:flex;gap:6px;align-items:baseline;min-height:44px}
+ol.steps button::before{content:counter(s);font:500 11px/1 var(--mono);color:var(--muted)}
+ol.steps button[aria-current="step"]{border-color:var(--accent);background:var(--accent-soft)}
+ol.steps button[aria-current="step"]::before{color:var(--accent)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+footer{font-size:12.5px;color:var(--muted);max-width:90ch}
+@media (max-width:520px){ol.steps{grid-template-columns:repeat(2,minmax(0,1fr))}.views{max-width:100%;left:10px;top:auto;bottom:10px;justify-content:flex-start}}
+@media (prefers-reduced-motion: reduce){*{scroll-behavior:auto}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Expulsivo en 3D</h1>
+    <p class="sub">Los movimientos cardinales de una presentación cefálica en occipito izquierda transversa, vistos dentro de la pelvis. Arrastra para girar, rueda o pellizca para acercar.</p>
+  </header>
+
+  <div class="grid">
+    <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+      <div class="viewer" id="viewer">
+        <div class="labels" id="labels"></div>
+        <div class="hud" aria-live="polite"><span>Estación</span><b id="hudStation">Libre</b><span id="hudPos">OIT</span></div>
+        <div class="views" role="group" aria-label="Vistas">
+          <button class="chip" data-view="tq" aria-pressed="true">3/4</button>
+          <button class="chip" data-view="lat">Lateral</button>
+          <button class="chip" data-view="att">Quien atiende</button>
+          <button class="chip" data-view="top">Desde arriba</button>
+        </div>
+      </div>
+      <div class="transport">
+        <button class="btn" id="prev" aria-label="Movimiento anterior">◀</button>
+        <button class="btn primary" id="play">Reproducir</button>
+        <button class="btn" id="next" aria-label="Movimiento siguiente">▶</button>
+        <input class="scrub" id="scrub" type="range" min="0" max="900" value="0" aria-label="Línea de tiempo del expulsivo">
+        <div class="toggles">
+          <label><input type="checkbox" id="solid"> Pelvis sólida</label>
+          <label><input type="checkbox" id="showLabels" checked> Etiquetas</label>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i class="sw" style="background:#d6c6a6"></i>Pelvis ósea</span>
+        <span><i class="sw" style="background:#0d6a7e"></i>Plano de las espinas, estación 0</span>
+        <span><i class="sw" style="background:#e0a63a"></i>Fontanela posterior (punto guía)</span>
+        <span><i class="sw" style="background:#7a5cc4"></i>Fontanela anterior</span>
+        <span><i class="sw" style="background:#c9877f"></i>Introito vulvar</span>
+      </div>
+    </div>
+
+    <aside class="panel">
+      <div>
+        <p class="eyebrow" id="stageNum">Movimiento 1 de 9</p>
+        <h2 id="stageName">Encajamiento</h2>
+      </div>
+      <div class="block"><h3>Qué pasa</h3><p id="tPasa"></p></div>
+      <div class="block"><h3>Dato clave</h3><p id="tDato"></p></div>
+      <div class="block do"><h3>Qué haces tú</h3><p id="tHaces"></p></div>
+      <div class="station">
+        <div class="block"><h3>Estación del punto guía (cm respecto a las espinas)</h3></div>
+        <div class="gauge" id="gauge"></div>
+        <div class="gscale"><span>−5</span><span>0</span><span>+5</span></div>
+      </div>
+      <ol class="steps" id="steps"></ol>
+    </aside>
+  </div>
+
+  <footer>Modelo esquemático para estudio, con medidas aproximadas en centímetros (biparietal 9.5, suboccipitobregmático 9.5, occipitofrontal 11.5, biacromial 12). La pelvis está en posición de litotomía: el pubis arriba, el sacro abajo y quien atiende frente al periné. El lado izquierdo materno queda a tu derecha en la vista de quien atiende.</footer>
+</div>
+
+<script src="assets/vendor/three/three.min.js"></script>
+<script src="assets/vendor/three/OrbitControls.js"></script>
+<script>
+(function(){
+const STAGES=[
+ {n:"Encajamiento",pos:"OIT",
+  pasa:"El diámetro biparietal (9.5 cm) cruza el estrecho superior. La sutura sagital entra transversa: occipito izquierda transversa, la variedad más común.",
+  dato:"Encajado equivale clínicamente a estación 0. En nulíparas puede ocurrir semanas antes del trabajo de parto.",
+  haces:"Tacto vaginal: estación, variedad de posición por suturas y fontanelas, y busca asinclitismo o caput."},
+ {n:"Descenso y flexión",pos:"OIT",
+  pasa:"La cabeza baja con las contracciones y el pujo. Al encontrar resistencia se flexiona y el mentón se acerca al pecho.",
+  dato:"La flexión cambia el diámetro que se presenta de occipitofrontal (11.5 cm) a suboccipitobregmático (9.5 cm). La fontanela posterior pasa a ser el punto guía.",
+  haces:"Vigila el descenso y la FCF. Pujo dirigido cuando hay dilatación completa y la paciente siente urgencia de pujar."},
+ {n:"Rotación interna",pos:"OIT → OA",
+  pasa:"Sobre el piso pélvico, el occipucio rota hacia adelante hasta quedar bajo la sínfisis. La sutura sagital queda anteroposterior.",
+  dato:"Desde OIT rota 90°. Si rota hacia atrás queda en occipito posterior: expulsivo más largo y más desgarros.",
+  haces:"Prepara campo e instrumental, avisa a pediatría y coloca a la paciente para el nacimiento."},
+ {n:"Extensión",pos:"OA",
+  pasa:"El occipucio se apoya bajo la sínfisis y la cabeza se extiende: salen bregma, frente, cara y mentón sobre el periné. Es el coronamiento.",
+  dato:"Momento de mayor riesgo de desgarro perineal.",
+  haces:"Controla la salida con una mano en el occipucio para evitar una extensión brusca, protege el periné con la otra y pide pujos suaves entre contracciones. Ritgen modificada si hace falta."},
+ {n:"Restitución",pos:"OA → OIIA",
+  pasa:"Ya libre, la cabeza gira 45° para realinearse con los hombros, que siguen en oblicuo.",
+  dato:"La cabeza 'recuerda' de dónde venía: si entró como izquierda, restituye hacia la izquierda.",
+  haces:"Busca circular de cordón. Floja: pásala sobre la cabeza. Apretada: maniobra de somersault o pinzar y cortar. La aspiración no es rutinaria."},
+ {n:"Rotación externa",pos:"OIIA → OIT",
+  pasa:"Los hombros rotan al diámetro anteroposterior del estrecho inferior y la cabeza gira otros 45°, con la cara hacia el muslo derecho materno.",
+  dato:"El diámetro biacromial (unos 12 cm) sale en anteroposterior, igual que la cabeza.",
+  haces:"Espera la siguiente contracción. Manos planas sobre los parietales, sin jalar del cuello."},
+ {n:"Hombro anterior",pos:"OIT",
+  pasa:"El hombro anterior se libera bajo la sínfisis.",
+  dato:"Si no sale con tracción suave es distocia de hombros: pide ayuda, McRoberts y presión suprapúbica. Nunca presión en el fondo.",
+  haces:"Tracción suave hacia abajo, en el eje del cuello. Sin tracción fuerte ni rotación forzada."},
+ {n:"Hombro posterior",pos:"OIT",
+  pasa:"El hombro posterior sale sobre el periné.",
+  dato:"Segundo momento de riesgo para el periné.",
+  haces:"Tracción suave hacia arriba, siguiendo la curva del canal, mientras proteges el periné."},
+ {n:"Expulsión",pos:"—",
+  pasa:"El resto del cuerpo sale por flexión lateral siguiendo la curva de Carus.",
+  dato:"Anota la hora de nacimiento.",
+  haces:"Sostén cabeza y cuello, bebé piel con piel, pinzamiento tardío del cordón (al menos 30 a 60 s) si está vigoroso y oxitocina 10 UI IM para el alumbramiento."}
+];
+// Keyframes: cabeza (cm), th = rotación del occipucio (0 = anterior, −90 = izquierda materna), a = flexión(−)/extensión(+), psi = eje biacromial, pitch = inclinación del cuerpo, vr = radio del introito
+const K=[
+ {z:-9, y:0,   th:-90,a:-5, psi:45,pitch:0,  vr:1.4},
+ {z:0,  y:0,   th:-90,a:-15,psi:45,pitch:0,  vr:1.4},
+ {z:4,  y:0.2, th:-90,a:-40,psi:45,pitch:0,  vr:1.6},
+ {z:6.2,y:0.8, th:0,  a:-40,psi:45,pitch:-4, vr:2.6},
+ {z:13, y:5,   th:0,  a:62, psi:45,pitch:-18,vr:4.2},
+ {z:13, y:5,   th:-45,a:62, psi:45,pitch:-18,vr:4.2},
+ {z:13, y:5,   th:-90,a:62, psi:90,pitch:-18,vr:4.4},
+ {z:15, y:2.5, th:-90,a:62, psi:90,pitch:10, vr:5.2},
+ {z:18, y:9,   th:-90,a:62, psi:90,pitch:-24,vr:5.2},
+ {z:33, y:15,  th:-90,a:62, psi:90,pitch:-34,vr:1.8}
+];
+const N=K.length-1;
+const D=Math.PI/180;
+
+const viewer=document.getElementById('viewer');
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+viewer.insertBefore(renderer.domElement,viewer.firstChild);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(38,1,0.5,500);
+camera.up.set(0,1,0);
+const controls=new THREE.OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true; controls.dampingFactor=0.08; controls.minDistance=14; controls.maxDistance=140;
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x8a7d6a,0.75));
+const sun=new THREE.DirectionalLight(0xffffff,0.7); sun.position.set(30,40,40); scene.add(sun);
+const fill=new THREE.DirectionalLight(0xffffff,0.3); fill.position.set(-30,-10,-30); scene.add(fill);
+
+function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+function applyTheme(){
+  const c=cssVar('--stage')||'#e3e9e9';
+  scene.background=new THREE.Color(c);
+}
+applyTheme();
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme)}catch(e){}
+new MutationObserver(applyTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+// ---------- Pelvis ----------
+const pelvis=new THREE.Group(); scene.add(pelvis);
+const boneMat=new THREE.MeshStandardMaterial({color:0xd6c6a6,roughness:0.85,transparent:true,opacity:0.5,depthWrite:false});
+function ellipse(cx,cy,z,rx,ry,n){const p=[];for(let i=0;i<n;i++){const t=i/n*Math.PI*2;p.push(new THREE.Vector3(cx+rx*Math.cos(t),cy+ry*Math.sin(t),z))}return p}
+function tube(points,r,mat,closed){const c=new THREE.CatmullRomCurve3(points,!!closed);const m=new THREE.Mesh(new THREE.TubeGeometry(c,closed?96:64,r,14,!!closed),mat);pelvis.add(m);return m}
+tube(ellipse(0,0,0,6.6,5.6,40),1.0,boneMat,true);          // estrecho superior
+tube(ellipse(0,0.9,9.2,5.6,5.8,40).filter(p=>p.y<5.2),0.7,boneMat,false); // estrecho inferior (abierto bajo el arco)
+const sym=new THREE.Mesh(new THREE.BoxGeometry(3.2,2.2,4.6),boneMat); sym.position.set(0,6.6,2.4); pelvis.add(sym);
+[-1,1].forEach(s=>{
+  tube([new THREE.Vector3(s*1.4,6.0,4.4),new THREE.Vector3(s*3.4,4.4,6.8),new THREE.Vector3(s*5.6,1.4,9.0)],0.8,boneMat); // rama isquiopúbica
+  tube([new THREE.Vector3(s*6.2,-3.2,0.6),new THREE.Vector3(s*9.6,-3.6,-4),new THREE.Vector3(s*11.6,-1.4,-8),new THREE.Vector3(s*9.2,2.8,-10)],1.0,boneMat); // ala ilíaca
+  tube([new THREE.Vector3(s*6.4,-1.5,0.5),new THREE.Vector3(s*6.0,-1.2,4),new THREE.Vector3(s*5.7,0.6,8.8)],0.8,boneMat); // pared lateral
+  const sp=new THREE.Mesh(new THREE.ConeGeometry(0.75,2.4,16),boneMat); sp.position.set(s*5.0,-1.3,5); sp.rotation.z=s*Math.PI/2; pelvis.add(sp); // espina ciática
+  const tb=new THREE.Mesh(new THREE.SphereGeometry(1.3,20,14),boneMat); tb.position.set(s*5.7,1.0,9.2); pelvis.add(tb); // tuberosidad
+});
+tube([new THREE.Vector3(0,-5.4,-1.5),new THREE.Vector3(0,-6.8,2),new THREE.Vector3(0,-7.0,5.5),new THREE.Vector3(0,-5.9,8.5),new THREE.Vector3(0,-4.3,10.8)],1.4,boneMat); // sacro y cóccix
+const ala=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),boneMat); ala.scale.set(5.2,1.3,2.8); ala.position.set(0,-6.0,0.4); pelvis.add(ala);
+// plano de estación 0
+const plane=new THREE.Mesh(new THREE.CircleGeometry(5.6,48),new THREE.MeshBasicMaterial({color:0x0d6a7e,transparent:true,opacity:0.14,side:THREE.DoubleSide,depthWrite:false}));
+plane.position.set(0,-0.3,5); scene.add(plane);
+const planeRing=new THREE.Mesh(new THREE.TorusGeometry(5.6,0.08,8,64),new THREE.MeshBasicMaterial({color:0x0d6a7e}));
+planeRing.position.copy(plane.position); scene.add(planeRing);
+// introito vulvar
+const vulva=new THREE.Mesh(new THREE.TorusGeometry(1,0.17,12,64),new THREE.MeshStandardMaterial({color:0xc9877f,roughness:0.6,transparent:true,opacity:0.8}));
+vulva.position.set(0,3.4,12.6); vulva.rotation.x=-0.42; scene.add(vulva);
+
+// ---------- Feto ----------
+const skin=new THREE.MeshStandardMaterial({color:0xe7b49a,roughness:0.65});
+const skin2=new THREE.MeshStandardMaterial({color:0xdca58a,roughness:0.7});
+const dark=new THREE.MeshStandardMaterial({color:0x4a2e2a,roughness:0.5});
+const headRoot=new THREE.Group(), yaw=new THREE.Group(), flex=new THREE.Group();
+scene.add(headRoot); headRoot.add(yaw); yaw.add(flex);
+const RX=5.6,RY=4.7,RZ=4.9;
+const skull=new THREE.Mesh(new THREE.SphereGeometry(1,56,40),skin); skull.scale.set(RX,RY,RZ); flex.add(skull);
+function part(geo,mat,pos,scl){const m=new THREE.Mesh(geo,mat);m.position.set(pos[0],pos[1],pos[2]);if(scl)m.scale.set(scl[0],scl[1],scl[2]);flex.add(m);return m}
+const sph=new THREE.SphereGeometry(1,20,14);
+part(sph,dark,[-5.0,1.6,-0.9],[0.25,0.55,0.18]); part(sph,dark,[-5.0,-1.6,-0.9],[0.25,0.55,0.18]); // ojos cerrados
+part(sph,skin,[-5.5,0,-1.9],[0.7,0.65,0.8]);   // nariz
+part(sph,dark,[-4.85,0,-3.1],[0.2,0.8,0.18]);  // boca
+part(sph,skin,[-3.8,0,-3.7],[1.6,1.9,1.3]);    // mentón
+part(sph,skin2,[0.2,4.65,-1.0],[1.1,0.45,1.5]); part(sph,skin2,[0.2,-4.65,-1.0],[1.1,0.45,1.5]); // orejas
+function surf(deg,k){const t=deg*D;return new THREE.Vector3(RX*Math.cos(t)*k,0,RZ*Math.sin(t)*k)}
+const sut=[];for(let d=48;d<=118;d+=5)sut.push(surf(d,1.01));
+flex.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(sut),40,0.14,8,false),dark)); // sutura sagital
+const pf=part(new THREE.ConeGeometry(0.8,0.4,3),new THREE.MeshStandardMaterial({color:0xe0a63a,roughness:0.4}),[0,0,0]);
+pf.position.copy(surf(46,1.0)); pf.lookAt(surf(46,2)); pf.rotateX(Math.PI/2);
+const af=part(new THREE.OctahedronGeometry(1.0),new THREE.MeshStandardMaterial({color:0x7a5cc4,roughness:0.4}),[0,0,0],[1.25,0.85,0.35]);
+af.position.copy(surf(118,0.97)); af.rotation.y=-28*D;
+const occ=new THREE.Object3D(); occ.position.set(5.4,0,-0.6); flex.add(occ);
+const face=new THREE.Object3D(); face.position.set(-5.9,0,-1.9); flex.add(face);
+
+const bodyRoot=new THREE.Group(); scene.add(bodyRoot);
+const torso=new THREE.Mesh(new THREE.SphereGeometry(1,40,28),skin); torso.scale.set(6.0,4.4,10); torso.position.set(0,0,-14.5); bodyRoot.add(torso);
+const neck=new THREE.Mesh(new THREE.CylinderGeometry(2.4,2.8,5,24),skin); neck.rotation.x=Math.PI/2; neck.position.set(0,0,-5.2); bodyRoot.add(neck);
+[-1,1].forEach(s=>{const arm=new THREE.Mesh(sph,skin2);arm.scale.set(1.5,1.6,6.5);arm.position.set(s*6.3,0.6,-15.5);bodyRoot.add(arm)});
+const legs=new THREE.Mesh(sph,skin2); legs.scale.set(4.6,4.2,6); legs.position.set(0,1.8,-26); bodyRoot.add(legs);
+const shoulderA=new THREE.Object3D(); shoulderA.position.set(6,0,-8); bodyRoot.add(shoulderA);
+
+// ---------- Etiquetas ----------
+const labelsEl=document.getElementById('labels');
+const LABELS=[];
+function addLabel(text,obj,off,key){const el=document.createElement('div');el.className='lbl'+(key?' key':'');el.textContent=text;labelsEl.appendChild(el);LABELS.push({el,obj,off:new THREE.Vector3(off[0],off[1],off[2])});}
+addLabel('Pubis',sym,[0,2,0]);
+addLabel('Sacro',ala,[0,-2.2,0]);
+addLabel('Espina ciática · estación 0',pelvis,[-5.4,-2.6,5],true);
+addLabel('Occipucio',occ,[0,0,0]);
+addLabel('Cara',face,[0,0,0]);
+addLabel('Introito',vulva,[0,1.2,0]);
+const tmp=new THREE.Vector3();
+function updateLabels(){
+  const w=viewer.clientWidth,h=viewer.clientHeight;
+  for(const L of LABELS){
+    tmp.copy(L.off); L.obj.localToWorld(tmp);
+    tmp.project(camera);
+    const vis=tmp.z<1&&tmp.x>-1.1&&tmp.x<1.1&&tmp.y>-1.1&&tmp.y<1.1;
+    L.el.style.visibility=vis?'visible':'hidden';
+    L.el.style.transform='translate('+((tmp.x*0.5+0.5)*w)+'px,'+((-tmp.y*0.5+0.5)*h)+'px) translate(-50%,-50%)';
+  }
+}
+
+// ---------- Estado ----------
+let T=0, playing=false, stopAt=null;
+const ease=u=>u*u*(3-2*u);
+function sample(t){
+  const i=Math.min(N-1,Math.max(0,Math.floor(t)));const u=ease(Math.min(1,Math.max(0,t-i)));
+  const A=K[i],B=K[i+1],o={};for(const k in A)o[k]=A[k]+(B[k]-A[k])*u;
+  if(t>3&&t<4)o.vr+=Math.sin(Math.PI*(t-3))*2.6; // coronamiento
+  return o;
+}
+const posAttr=skull.geometry.attributes.position, v3=new THREE.Vector3();
+function leadZ(){skull.updateMatrixWorld(true);let m=-1e9;for(let i=0;i<posAttr.count;i+=3){v3.fromBufferAttribute(posAttr,i).applyMatrix4(skull.matrixWorld);if(v3.z>m)m=v3.z}return m}
+
+const el=id=>document.getElementById(id);
+const stepsEl=el('steps');
+STAGES.forEach((s,i)=>{const li=document.createElement('li');const b=document.createElement('button');b.type='button';b.textContent=s.n;b.addEventListener('click',()=>{T=i;stopAt=i+1;setPlaying(true)});li.appendChild(b);stepsEl.appendChild(li)});
+const stepBtns=[...stepsEl.querySelectorAll('button')];
+const gauge=el('gauge');
+for(let s=-5;s<=5;s++){const t=document.createElement('i');t.className='tick'+(s===0?' zero':'');t.style.left=((s+5)/10*100)+'%';gauge.appendChild(t)}
+const mark=document.createElement('i');mark.className='mark';gauge.appendChild(mark);
+
+let shownStage=-1;
+function apply(){
+  const o=sample(T);
+  headRoot.position.set(0,o.y,o.z);
+  yaw.rotation.z=(90+o.th)*D;
+  flex.rotation.y=o.a*D;
+  bodyRoot.position.set(0,o.y,o.z);
+  bodyRoot.rotation.set(o.pitch*D,0,o.psi*D);
+  const r=o.vr; vulva.scale.set(r,r,1);
+  const st=Math.min(STAGES.length-1,Math.floor(T));
+  if(st!==shownStage){
+    shownStage=st;const s=STAGES[st];
+    el('stageNum').textContent='Movimiento '+(st+1)+' de '+STAGES.length;
+    el('stageName').textContent=s.n; el('tPasa').textContent=s.pasa; el('tDato').textContent=s.dato; el('tHaces').textContent=s.haces;
+    el('hudPos').textContent='Variedad: '+s.pos;
+    stepBtns.forEach((b,i)=>{if(i===st)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current')});
+  }
+  const lz=leadZ(), station=lz-5;
+  let txt;
+  if(T>=8.6) txt='Nacido';
+  else if(T>=4) txt='Cabeza fuera';
+  else if(station>=5) txt='+5 · coronamiento';
+  else if(station<-5) txt='Libre, sobre el estrecho superior';
+  else txt=(station>=0?'+':'−')+Math.abs(Math.round(station));
+  el('hudStation').textContent=txt;
+  const g=Math.max(-5,Math.min(5,station));
+  mark.style.left=((g+5)/10*100)+'%';
+  el('scrub').value=Math.round(T*100);
+}
+
+const playBtn=el('play');
+function setPlaying(p){playing=p;playBtn.textContent=p?'Pausa':(T>=N?'Repetir':'Reproducir')}
+playBtn.addEventListener('click',()=>{if(!playing&&T>=N)T=0;stopAt=null;setPlaying(!playing)});
+el('prev').addEventListener('click',()=>{T=Math.max(0,T%1===0?T-1:Math.floor(T));stopAt=null;setPlaying(false)});
+el('next').addEventListener('click',()=>{if(T>=N)return;stopAt=Math.min(N,Math.floor(T)+1);setPlaying(true)});
+el('scrub').addEventListener('input',e=>{T=e.target.value/100;stopAt=null;setPlaying(false)});
+el('solid').addEventListener('change',e=>{const s=e.target.checked;boneMat.opacity=s?1:0.5;boneMat.transparent=!s;boneMat.depthWrite=s;boneMat.needsUpdate=true});
+el('showLabels').addEventListener('change',e=>labelsEl.classList.toggle('off',!e.target.checked));
+
+// ---------- Vistas ----------
+const VIEWS={tq:{p:[31,16,29],t:[0,1,4]},lat:{p:[46,5,4],t:[0,1,4]},att:{p:[0,8,40],t:[0,2,6]},top:{p:[0,3,-38],t:[0,0,3]}};
+let camAnim=null;
+function goView(k,instant){const v=VIEWS[k];const to={p:new THREE.Vector3(...v.p),t:new THREE.Vector3(...v.t)};
+  document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===k)));
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(instant||reduce){camera.position.copy(to.p);controls.target.copy(to.t);controls.update();return}
+  camAnim={from:{p:camera.position.clone(),t:controls.target.clone()},to,start:performance.now()}}
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>goView(b.dataset.view)));
+goView('tq',true);
+
+function resize(){const w=viewer.clientWidth,h=viewer.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+new ResizeObserver(resize).observe(viewer); resize();
+
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  if(playing){T+=dt*0.32;const lim=stopAt!=null?stopAt:N;if(T>=lim){T=lim;stopAt=null;setPlaying(false)}}
+  if(camAnim){const u=Math.min(1,(now-camAnim.start)/700),e=ease(u);camera.position.lerpVectors(camAnim.from.p,camAnim.to.p,e);controls.target.lerpVectors(camAnim.from.t,camAnim.to.t,e);if(u>=1)camAnim=null}
+  apply(); controls.update(); renderer.render(scene,camera); updateLabels();
+  requestAnimationFrame(loop);
+}
+apply(); requestAnimationFrame(loop);
+})();
+</script>
+
+</body></html>

@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Etapas del trabajo de parto</title>
+<meta name="description" content="Animación en corte sagital de la fase latente al alumbramiento, con capítulos y criterios clínicos.">
+</head><body>
+<style>
+.pf-bar{max-width:1320px;margin:0 auto 14px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 16px;font:500 13px/1.4 'IBM Plex Sans','Segoe UI',Arial,sans-serif}
+.pf-bar a{color:var(--accent,#0d6a7e);text-decoration:none;font-weight:600}
+.pf-bar a:hover{text-decoration:underline}
+.pf-bar span{color:var(--muted,#55626b);max-width:80ch}
+</style>
+<nav class="pf-bar" aria-label="Sitio"><a href="./">← Todos los recursos</a><span>Material educativo esquemático para estudiantes e internos de medicina. No sustituye el protocolo de tu hospital, la indicación de tu adscrito ni el criterio clínico.</span></nav>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Literata:opsz,wght@7..72,500;7..72,700&display=swap">
+<style>
+/* Layout: un reproductor 16:9 centrado con controles de video y capítulos debajo */
+:root{
+  --bg:#f2f4f3; --surface:#ffffff; --ink:#17222a; --muted:#55626b; --line:#d5dbdb;
+  --accent:#0d6a7e; --accent-ink:#ffffff; --accent-soft:#dcecef;
+  --display:'Literata', Georgia, serif; --body:'IBM Plex Sans', 'Segoe UI', Arial, sans-serif; --mono:'IBM Plex Mono', Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1417; --surface:#162026; --ink:#e5ecee; --muted:#9aa8ae; --line:#29363c;
+  --accent:#55b6cb; --accent-ink:#0a1417; --accent-soft:#1b3138; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1417; --surface:#162026; --ink:#e5ecee; --muted:#9aa8ae; --line:#29363c;
+  --accent:#55b6cb; --accent-ink:#0a1417; --accent-soft:#1b3138; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;padding:20px 16px 32px}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(24px,3.2vw,34px);line-height:1.15;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:0;max-width:70ch}
+.player{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+canvas{display:block;width:100%;height:auto;aspect-ratio:16/9;background:#eef3f2;cursor:pointer}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line)}
+.btn{font:600 13px/1 var(--body);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:9px 12px;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);min-width:92px}
+.scrub{flex:1 1 220px;min-width:0;accent-color:var(--accent)}
+.time{font:500 13px/1 var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.chapters{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 12px}
+.chip{font:500 12.5px/1 var(--body);background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:8px 12px;cursor:pointer}
+.chip[aria-current="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+footer{font-size:12.5px;color:var(--muted);max-width:90ch}
+</style>
+<div class="wrap">
+  <h1>Etapas del trabajo de parto</h1>
+  <p class="sub">Animación 2D en corte sagital: fase latente, fase activa, expulsivo y alumbramiento. El tiempo está comprimido; los criterios clínicos aparecen en el panel derecho.</p>
+  <div class="player">
+    <canvas id="cv" width="1280" height="720" aria-label="Animación de las etapas del trabajo de parto"></canvas>
+    <div class="bar">
+      <button class="btn primary" id="play">Reproducir</button>
+      <input class="scrub" id="scrub" type="range" min="0" max="7600" value="0" aria-label="Posición del video">
+      <span class="time" id="time">0:00 / 1:16</span>
+    </div>
+    <div class="chapters" id="chapters"></div>
+  </div>
+  <footer>Esquema con fines de estudio. Definiciones de fase activa desde 6 cm y de detención según ACOG/SMFM; duración del alumbramiento según práctica habitual. Los tiempos reales varían mucho entre nulíparas y multíparas.</footer>
+</div>
+<script>
+(function(){
+const W=1280,H=720,TOTAL=76;
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+const seg=(t,a,b)=>clamp((t-a)/(b-a));
+const ease=u=>u*u*(3-2*u);
+const lerp=(a,b,u)=>a+(b-a)*u;
+const SERIF="Literata, Georgia, 'DejaVu Serif', serif", SANS="'IBM Plex Sans', 'Segoe UI', Arial, sans-serif", MONO="'IBM Plex Mono', Consolas, monospace";
+const C={bg:'#eef3f2',ink:'#17222a',muted:'#55626b',accent:'#0d6a7e',accentSoft:'#dcecef',line:'#cfd8d8',
+  skin:'#f5dccb',skinLine:'#cfa088',muscle:'#d4656e',muscleDark:'#a33f4a',canal:'#e39a9c',fluid:'#cbe6f1',cavity:'#f3dcdc',
+  bone:'#efe4c9',boneLine:'#b9a57c',bladder:'#f3e6a2',rectum:'#e8c4aa',placenta:'#8a2c44',blood:'#b3263a',cord:'#c4dde7',cordLine:'#7fa6b8',
+  baby:'#f1bba2',babyLine:'#b47862'};
+
+// ---------- contracciones ----------
+function period(t){if(t<18)return lerp(5,3.5,seg(t,4,18));if(t<32)return lerp(3,2.4,seg(t,18,32));if(t<50)return 2.2;return 3.4}
+function amp(t){if(t<4)return .15;if(t<18)return lerp(.35,.6,seg(t,4,18));if(t<32)return lerp(.7,.9,seg(t,18,32));if(t<50)return 1;if(t<66)return .45;return .25}
+const DT=0.02,PH=[];{let ph=0;for(let t=0;t<=TOTAL+0.05;t+=DT){PH.push(ph);ph+=DT/period(t)}}
+function contr(t){t=clamp(t,0,TOTAL);return amp(t)*Math.pow(Math.max(0,Math.sin(2*Math.PI*PH[Math.min(PH.length-1,Math.round(t/DT))])),3)}
+
+// ---------- trayectoria del canal ----------
+const PATH=[[330,390],[331,455],[327,520],[312,585],[287,640],[240,690],[180,712]];
+function cumul(P){const c=[0];for(let i=1;i<P.length;i++)c.push(c[i-1]+Math.hypot(P[i][0]-P[i-1][0],P[i][1]-P[i-1][1]));return c}
+const CUM=cumul(PATH);
+function pt(P,Cm,d){d=clamp(d,0,Cm[Cm.length-1]);let i=1;while(i<Cm.length-1&&Cm[i]<d)i++;const u=(d-Cm[i-1])/((Cm[i]-Cm[i-1])||1);return [lerp(P[i-1][0],P[i][0],u),lerp(P[i-1][1],P[i][1],u)]}
+function along(P,Cm,d){const p=pt(P,Cm,d),a=pt(P,Cm,d-14),b=pt(P,Cm,d+14);return {x:p[0],y:p[1],ang:Math.atan2(b[1]-a[1],b[0]-a[0])}}
+const INTRO={x:287,y:640};
+
+// ---------- estado por tiempo ----------
+function S(t){
+  const s={t};
+  s.dil=t<4?1:t<18?lerp(1,6,ease(seg(t,4,18))):t<32?lerp(6,10,ease(seg(t,18,32))):t<62?10:lerp(10,5,ease(seg(t,62,68)));
+  s.eff=lerp(0,100,ease(seg(t,4,15)));
+  s.station=t<18?lerp(-3,-2,seg(t,4,18)):t<32?lerp(-2,0,seg(t,18,32)):t<46?lerp(0,5,ease(seg(t,32,46))):5;
+  s.d=t<32?lerp(0,0.7*CUM[1],ease(seg(t,4,32))):t<46?lerp(0.7*CUM[1],CUM[4],ease(seg(t,32,46))):lerp(CUM[4],CUM[6],ease(seg(t,46,50)));
+  const k=t<52?1:t<60?lerp(1,.62,ease(seg(t,52,60))):lerp(.62,.5,ease(seg(t,60,66)));
+  s.k=k;s.rx=170*k;s.ry=195*k;s.cx=330;s.cy=435-s.ry;
+  s.c=contr(t);
+  s.rupt=ease(seg(t,24,29));
+  s.sep=ease(seg(t,55,59));
+  s.plDesc=ease(seg(t,59,64));
+  return s;
+}
+function fetusPose(s){
+  const p=along(PATH,CUM,s.d);let x=p.x,y=p.y,R=p.ang-Math.PI/2,sc=1;
+  if(s.t>50){const u=ease(seg(s.t,50,52.5));x=lerp(x,96,u);y=lerp(y,650,u);R=lerp(R,Math.PI/2,u);sc=lerp(1,.78,u)}
+  return {x,y,R,sc};
+}
+function toWorld(pose,lx,ly){const c=Math.cos(pose.R),sn=Math.sin(pose.R);return [pose.x+(lx*c-ly*sn)*pose.sc,pose.y+(lx*sn+ly*c)*pose.sc]}
+
+// ---------- dibujo ----------
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function mother(s){
+  const fx=s.cx-s.rx-46;
+  ctx.beginPath();ctx.moveTo(330,-10);
+  ctx.bezierCurveTo(fx-10,30,fx-30,s.cy+40,192,470);
+  ctx.quadraticCurveTo(178,548,232,592);ctx.quadraticCurveTo(254,612,266,628);
+  ctx.lineTo(300,656);ctx.quadraticCurveTo(330,676,358,674);
+  ctx.quadraticCurveTo(420,740,520,730);ctx.lineTo(600,730);ctx.lineTo(600,-10);ctx.closePath();
+  ctx.fillStyle=C.skin;ctx.fill();ctx.lineWidth=3;ctx.strokeStyle=C.skinLine;ctx.stroke();
+}
+function anatomy(){
+  // columna y sacro
+  ctx.fillStyle=C.bone;ctx.strokeStyle=C.boneLine;ctx.lineWidth=2;
+  for(let y=-10;y<300;y+=50){rr(498,y,50,40,10);ctx.fill();ctx.stroke()}
+  ctx.lineCap='round';ctx.beginPath();ctx.moveTo(512,330);ctx.bezierCurveTo(540,430,520,560,440,632);
+  ctx.lineWidth=36;ctx.strokeStyle=C.boneLine;ctx.stroke();ctx.lineWidth=32;ctx.strokeStyle=C.bone;ctx.stroke();
+  ctx.beginPath();ctx.moveTo(440,632);ctx.lineTo(410,652);ctx.lineWidth=14;ctx.strokeStyle=C.boneLine;ctx.stroke();ctx.lineWidth=10;ctx.strokeStyle=C.bone;ctx.stroke();
+  // recto
+  ctx.beginPath();ctx.moveTo(452,380);ctx.bezierCurveTo(445,500,430,600,360,668);ctx.lineWidth=28;ctx.strokeStyle=C.rectum;ctx.stroke();
+  // vejiga
+  ctx.beginPath();ctx.ellipse(236,468,34,24,-.3,0,Math.PI*2);ctx.fillStyle=C.bladder;ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#cdb75b';ctx.stroke();
+  // pubis
+  ctx.save();ctx.translate(212,536);ctx.rotate(-.35);rr(-21,-34,42,68,18);ctx.fillStyle=C.bone;ctx.fill();ctx.strokeStyle=C.boneLine;ctx.lineWidth=2;ctx.stroke();ctx.restore();
+  ctx.lineCap='butt';
+}
+function geomCervix(s){
+  const w=4+s.dil*5.6,lip=14+(1-s.eff/100)*14,L=10+(1-s.eff/100)*44;
+  const gapX=w+lip*.6;const dl=Math.asin(clamp(gapX/s.rx,0,.95));const yb=s.cy+s.ry*Math.cos(dl);
+  return {w,lip,L,dl,yb};
+}
+function cavity(s){
+  ctx.beginPath();ctx.ellipse(s.cx,s.cy,s.rx,s.ry,0,0,Math.PI*2);
+  const f=s.t<50?s.rupt*.75:1;
+  ctx.fillStyle=mix(C.fluid,C.cavity,f);ctx.fill();
+}
+function canal(s,g){
+  const p=along(PATH,CUM,s.d);
+  let pres=s.t<50?clamp(1-Math.max(0,CUM[1]*.8-s.d)/30)*clamp(1-Math.max(0,s.d-CUM[5])/40):0;
+  if(s.t>58&&s.t<65)pres=Math.max(pres,.45*Math.sin(Math.PI*seg(s.t,59,64)));
+  const sp=6+42*pres;
+  ctx.lineCap='round';ctx.lineWidth=12;ctx.strokeStyle=C.canal;
+  ctx.beginPath();ctx.moveTo(s.cx-g.w-g.lip*.5,g.yb+g.L-4);ctx.quadraticCurveTo(292-sp,560,262,630);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(s.cx+g.w+g.lip*.5,g.yb+g.L-4);ctx.quadraticCurveTo(348+sp,585,308,654);ctx.stroke();
+  ctx.lineCap='butt';
+}
+function uterusWall(s,g){
+  const lw=22+11*s.c;
+  ctx.beginPath();ctx.ellipse(s.cx,s.cy,s.rx,s.ry,0,Math.PI/2+g.dl,Math.PI/2-g.dl+Math.PI*2);
+  ctx.lineWidth=lw+4;ctx.strokeStyle=C.muscleDark;ctx.stroke();ctx.lineWidth=lw;ctx.strokeStyle=C.muscle;ctx.stroke();
+  // labios del cérvix
+  [-1,1].forEach(sd=>{const x=s.cx+sd*(g.w+g.lip/2)-g.lip/2;rr(x,g.yb-8,g.lip,g.L+8,g.lip/2);ctx.fillStyle=C.muscle;ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=C.muscleDark;ctx.stroke()});
+  // flechas de contracción
+  if(s.c>.25&&s.t<52){ctx.save();ctx.globalAlpha=clamp((s.c-.25)/.5);ctx.strokeStyle=C.muscleDark;ctx.lineWidth=4;ctx.lineCap='round';
+    [[-.55,-1],[0,-1.05],[.55,-1]].forEach(([ax,ay])=>{const x=s.cx+ax*s.rx*1.12,y=s.cy+ay*s.ry*1.1;ctx.beginPath();ctx.moveTo(x-10,y-12);ctx.lineTo(x,y);ctx.lineTo(x+10,y-12);ctx.stroke()});ctx.restore()}
+}
+const PA=-.75,PS=.42;
+function placentaCenter(s,inset){const r1=s.rx-inset,r2=s.ry-inset;return [s.cx+r1*Math.cos(PA),s.cy+r2*Math.sin(PA)]}
+function placentaPath(s){const a=placentaCenter(s,40);return [a,[s.cx+10,s.cy+s.ry*.3],[s.cx,435],[s.cx,490],[312,585],[287,640],[262,700]]}
+function placentaPos(s){const P=placentaPath(s),Cm=cumul(P);return pt(P,Cm,Cm[Cm.length-1]*s.plDesc)}
+function placenta(s){
+  if(s.plDesc<=0){
+    const inset=18+20*s.sep;
+    if(s.sep>0){ctx.beginPath();ctx.ellipse(s.cx,s.cy,s.rx-16,s.ry-16,0,PA-PS,PA+PS);ctx.lineWidth=8+14*s.sep;ctx.strokeStyle=C.blood;ctx.globalAlpha=s.sep;ctx.stroke();ctx.globalAlpha=1}
+    ctx.beginPath();ctx.ellipse(s.cx,s.cy,s.rx-inset,s.ry-inset,0,PA-PS*(1-.15*s.sep),PA+PS*(1-.15*s.sep));ctx.lineWidth=24;ctx.lineCap='round';ctx.strokeStyle=C.placenta;ctx.stroke();ctx.lineCap='butt';
+  }else{
+    const p=placentaPos(s);ctx.beginPath();ctx.ellipse(p[0],p[1],34,20,-.6,0,Math.PI*2);ctx.fillStyle=C.placenta;ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#5d1c2d';ctx.stroke();
+  }
+}
+function smooth(points){ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);for(let i=1;i<points.length-1;i++){const mx=(points[i][0]+points[i+1][0])/2,my=(points[i][1]+points[i+1][1])/2;ctx.quadraticCurveTo(points[i][0],points[i][1],mx,my)}const l=points[points.length-1];ctx.lineTo(l[0],l[1])}
+function strokeCord(points){smooth(points);ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=11;ctx.strokeStyle=C.cordLine;ctx.stroke();smooth(points);ctx.lineWidth=7;ctx.strokeStyle=C.cord;ctx.stroke();ctx.lineCap='butt'}
+function cord(s,pose){
+  const plc=s.plDesc>0?placentaPos(s):placentaCenter(s,30);
+  const belly=toWorld(pose,46,-108);
+  if(s.t<46){strokeCord([plc,[plc[0]-70,plc[1]+70],[belly[0]+70,belly[1]-30],belly]);return}
+  if(s.t<53.5){strokeCord([plc,[s.cx+20,s.cy+s.ry*.4],[s.cx+8,450],[300,600],[INTRO.x,INTRO.y],[INTRO.x-40,INTRO.y+40],belly]);
+    if(s.t>52.5){ctx.fillStyle='#2f6fbf';[[.35],[.6]].forEach(([u])=>{const x=lerp(INTRO.x-30,belly[0],u),y=lerp(INTRO.y+40,belly[1],u);rr(x-7,y-4,14,8,2);ctx.fill()})}return}
+  // cortado
+  const stubEnd=[belly[0]+14,belly[1]+16];strokeCord([belly,stubEnd]);ctx.fillStyle='#2f6fbf';rr(stubEnd[0]-7,stubEnd[1]-4,14,8,2);ctx.fill();
+  const ext=12+30*s.sep+40*s.plDesc;
+  if(s.plDesc<1){strokeCord([plc,[s.cx+10,Math.max(plc[1]+30,s.cy+s.ry*.5)],[s.cx+4,450],[300,600],[INTRO.x,INTRO.y],[INTRO.x+4,INTRO.y+ext]])}
+  else{strokeCord([plc,[plc[0]+20,plc[1]+12]])}
+  if(s.plDesc<1){ctx.fillStyle='#2f6fbf';rr(INTRO.x-3,INTRO.y+ext-4,14,8,2);ctx.fill()}
+}
+function fetus(pose){
+  ctx.save();ctx.translate(pose.x,pose.y);ctx.rotate(pose.R);ctx.scale(pose.sc,pose.sc);
+  ctx.fillStyle=C.baby;ctx.strokeStyle=C.babyLine;ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.ellipse(28,-182,38,30,.3,0,Math.PI*2);ctx.fill();ctx.stroke();           // piernas
+  ctx.beginPath();ctx.ellipse(6,-112,50,80,.08,0,Math.PI*2);ctx.fill();ctx.stroke();           // tronco
+  ctx.beginPath();ctx.ellipse(52,-160,22,12,-.9,0,Math.PI*2);ctx.fill();ctx.stroke();          // pie
+  ctx.beginPath();ctx.moveTo(30,-70);ctx.quadraticCurveTo(62,-88,50,-118);ctx.lineWidth=14;ctx.lineCap='round';ctx.strokeStyle=C.babyLine;ctx.stroke();ctx.lineWidth=10;ctx.strokeStyle=C.baby;ctx.stroke();ctx.lineCap='butt'; // brazo
+  ctx.lineWidth=2.5;ctx.strokeStyle=C.babyLine;
+  ctx.beginPath();ctx.arc(0,0,56,0,Math.PI*2);ctx.fill();ctx.stroke();                         // cabeza
+  ctx.beginPath();ctx.arc(-4,-6,9,.6,4.4);ctx.stroke();                                         // oreja
+  ctx.beginPath();ctx.moveTo(24,2);ctx.quadraticCurveTo(32,8,40,2);ctx.stroke();                // ojo
+  ctx.beginPath();ctx.moveTo(52,10);ctx.quadraticCurveTo(60,18,52,24);ctx.stroke();             // nariz
+  ctx.beginPath();ctx.moveTo(42,34);ctx.quadraticCurveTo(46,38,40,40);ctx.stroke();             // boca
+  ctx.restore();
+}
+function vulva(s){
+  const pose=along(PATH,CUM,s.d);let pres=0;
+  if(s.t<50)pres=clamp(1-Math.abs(s.d-CUM[4])/80);if(s.t>=46&&s.t<51)pres=Math.max(pres,.75*(1-seg(s.t,49.5,51)));
+  if(s.t>59&&s.t<65)pres=Math.max(pres,.5*clamp(1-Math.abs(s.plDesc-.86)/.25));
+  const r=10+50*pres;
+  ctx.save();ctx.translate(INTRO.x,INTRO.y);ctx.rotate(-.75);
+  ctx.beginPath();ctx.ellipse(0,0,r,6+10*pres,0,Math.PI*1.05,Math.PI*1.95);ctx.lineWidth=7;ctx.strokeStyle='#c97f80';ctx.stroke();
+  ctx.beginPath();ctx.ellipse(0,0,r,6+10*pres,0,Math.PI*.05,Math.PI*.95);ctx.stroke();ctx.restore();
+}
+function trickle(s){
+  const a=seg(s.t,24,25)*(1-seg(s.t,28,30));if(a<=0)return;
+  ctx.save();ctx.globalAlpha=a;ctx.strokeStyle='#7cc1db';ctx.lineWidth=6;ctx.setLineDash([14,10]);ctx.lineDashOffset=-s.t*80;
+  smooth([[330,450],[322,540],[300,610],[INTRO.x,INTRO.y],[INTRO.x+6,INTRO.y+60]]);ctx.stroke();ctx.restore();
+}
+function mix(a,b,u){const pa=[1,3,5].map(i=>parseInt(a.substr(i,2),16)),pb=[1,3,5].map(i=>parseInt(b.substr(i,2),16));return 'rgb('+pa.map((v,i)=>Math.round(lerp(v,pb[i],u))).join(',')+')'}
+
+// ---------- panel ----------
+const STAGES=[
+ {a:4,b:18,eb:'Primer periodo',ti:'Fase latente',f:['Contracciones irregulares que se vuelven regulares.','El cérvix se borra y se dilata lentamente hasta 6 cm.','Prolongada: más de 20 h en nulíparas o 14 h en multíparas.']},
+ {a:18,b:32,eb:'Primer periodo',ti:'Fase activa',f:['De 6 a 10 cm, con contracciones cada 2 a 3 minutos.','La dilatación se acelera y las membranas suelen romperse.','Detención: 6 cm o más, membranas rotas y sin cambio por 4 h con buena dinámica o 6 h con oxitocina.']},
+ {a:32,b:52,eb:'Segundo periodo',ti:'Expulsivo',f:['De la dilatación completa al nacimiento.','La cabeza desciende, rota, corona y sale; luego los hombros y el cuerpo.','Detención: 3 h de pujo en nulíparas o 2 h en multíparas, más con epidural.']},
+ {a:52,b:68,eb:'Tercer periodo',ti:'Alumbramiento',f:['Del nacimiento a la salida de la placenta.','Signos de desprendimiento: el cordón se alarga, sangrado súbito y útero globoso que sube.','Normal en 30 min o menos. Manejo activo: oxitocina 10 UI IM y tracción controlada del cordón.']}
+];
+const EVENTS=[[22,27,'Ruptura de membranas'],[43,47.5,'Coronamiento'],[48.5,51.5,'Nacimiento'],[52.3,55,'Pinzamiento y corte del cordón'],[55,59,'Desprendimiento de la placenta'],[59.5,64,'Salida de la placenta'],[64,68,'Útero contraído: globo de seguridad']];
+function wrap(text,x,y,maxW,lh){const words=text.split(' ');let line='';for(const w of words){const test=line?line+' '+w:w;if(ctx.measureText(test).width>maxW&&line){ctx.fillText(line,x,y);line=w;y+=lh}else line=test}ctx.fillText(line,x,y);return y+lh}
+function stat(x,label,val){ctx.fillStyle=C.muted;ctx.font='500 15px '+SANS;ctx.fillText(label.toUpperCase(),x,206);ctx.fillStyle=C.ink;ctx.font='700 '+(val.length>7?30:40)+'px '+SERIF;ctx.fillText(val,x,250)}
+function panel(s){
+  const X=730;
+  ctx.fillStyle='#ffffff';rr(X-14,24,W-X-10,672,16);ctx.fill();ctx.strokeStyle=C.line;ctx.lineWidth=1.5;ctx.stroke();
+  const st=STAGES.find(o=>s.t>=o.a&&s.t<o.b)||(s.t<4?STAGES[0]:STAGES[3]);
+  ctx.fillStyle=C.accent;ctx.font='500 16px '+MONO;ctx.fillText(st.eb.toUpperCase(),X+10,70);
+  ctx.fillStyle=C.ink;ctx.font='700 46px '+SERIF;ctx.fillText(st.ti,X+10,122);
+  if(s.t<50){stat(X+10,'Dilatación',Math.round(s.dil)+' cm');stat(X+170,'Borramiento',(Math.round(s.eff/10)*10)+'%');
+    const sv=Math.round(s.station);stat(X+340,'Estación',s.t>=46?'+5':(sv>0?'+':sv<0?'−':'')+Math.abs(sv))}
+  else{stat(X+10,'Placenta',s.plDesc>=1?'Fuera':s.plDesc>0?'Saliendo':s.sep>0?'Se desprende':'Adherida');stat(X+290,'Útero',s.k<.7?'Contraído':'Se contrae')}
+  // cérvix visto desde abajo
+  if(s.t<50){const ix=1178,iy=98;ctx.save();ctx.beginPath();ctx.arc(ix,iy,62,0,Math.PI*2);ctx.fillStyle=C.muscle;ctx.fill();
+    ctx.setLineDash([3,4]);ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=1;[2,4,6,8,10].forEach(c=>{ctx.beginPath();ctx.arc(ix,iy,c*5.6,0,Math.PI*2);ctx.stroke()});ctx.setLineDash([]);
+    ctx.beginPath();ctx.arc(ix,iy,Math.max(1.5,s.dil*5.6),0,Math.PI*2);ctx.fillStyle='#3b1d22';ctx.fill();
+    if(s.t>18){ctx.beginPath();ctx.arc(ix,iy,Math.max(0,s.dil*5.6-4),0,Math.PI*2);ctx.fillStyle=C.baby;ctx.globalAlpha=seg(s.t,18,22);ctx.fill();ctx.globalAlpha=1}
+    ctx.restore();ctx.fillStyle=C.muted;ctx.font='500 13px '+SANS;ctx.textAlign='center';ctx.fillText('Cérvix desde abajo',ix,180);ctx.textAlign='left'}
+  // datos
+  ctx.fillStyle=C.ink;ctx.font='400 19px '+SANS;let y=312;
+  st.f.forEach(line=>{ctx.fillStyle=C.accent;ctx.beginPath();ctx.arc(X+16,y-7,4,0,Math.PI*2);ctx.fill();ctx.fillStyle=C.ink;y=wrap(line,X+32,y,470,25)+9});
+  // tocograma
+  const gx=X+10,gy=528,gw=500,gh=62;
+  ctx.fillStyle=C.muted;ctx.font='500 13px '+SANS;ctx.fillText('CONTRACCIONES · ÚLTIMOS 20 S',gx,gy-10);
+  ctx.strokeStyle=C.line;ctx.lineWidth=1;ctx.strokeRect(gx,gy,gw,gh);
+  ctx.beginPath();for(let i=0;i<=gw;i+=2){const tt=s.t-20+20*i/gw;const v=tt<0?0:contr(tt);const yy=gy+gh-4-v*(gh-12);i?ctx.lineTo(gx+i,yy):ctx.moveTo(gx+i,yy)}
+  ctx.lineTo(gx+gw,gy+gh);ctx.lineTo(gx,gy+gh);ctx.closePath();ctx.fillStyle='rgba(13,106,126,.15)';ctx.fill();
+  ctx.beginPath();for(let i=0;i<=gw;i+=2){const tt=s.t-20+20*i/gw;const v=tt<0?0:contr(tt);const yy=gy+gh-4-v*(gh-12);i?ctx.lineTo(gx+i,yy):ctx.moveTo(gx+i,yy)}ctx.strokeStyle=C.accent;ctx.lineWidth=2.5;ctx.stroke();
+  // línea de tiempo
+  const tx=X+10,tw=500,ty=622;
+  STAGES.forEach((o,i)=>{const x0=tx+tw*(o.a-4)/64,x1=tx+tw*(o.b-4)/64;const on=s.t>=o.a&&s.t<o.b;
+    ctx.fillStyle=on?C.accent:C.accentSoft;rr(x0+2,ty,x1-x0-4,12,6);ctx.fill();
+    ctx.fillStyle=on?C.ink:C.muted;ctx.font=(on?'600 ':'400 ')+'14px '+SANS;ctx.fillText(['Latente','Activa','Expulsivo','Alumbramiento'][i],x0+4,ty+34)});
+  const mx=tx+tw*clamp((s.t-4)/64);ctx.fillStyle=C.ink;ctx.beginPath();ctx.moveTo(mx,ty-4);ctx.lineTo(mx-7,ty-14);ctx.lineTo(mx+7,ty-14);ctx.closePath();ctx.fill();
+  ctx.fillStyle=C.muted;ctx.font='400 13px '+SANS;ctx.fillText('Tiempo comprimido, no está a escala',tx,ty+60);
+}
+function caption(s){
+  const e=EVENTS.find(v=>s.t>=v[0]&&s.t<v[1]);if(!e)return;
+  const a=Math.min(seg(s.t,e[0],e[0]+.4),1-seg(s.t,e[1]-.4,e[1]));
+  ctx.save();ctx.globalAlpha=a;ctx.font='600 22px '+SANS;const w=ctx.measureText(e[2]).width+36;
+  ctx.fillStyle=C.ink;rr(28,26,w,44,22);ctx.fill();ctx.fillStyle='#ffffff';ctx.fillText(e[2],46,56);ctx.restore();
+}
+function labels(s){
+  ctx.font='500 14px '+MONO;ctx.fillStyle=C.muted;
+  const L=[['Útero',s.cx-s.rx-10,s.cy-s.ry+40,'right'],['Sacro',560,470,'left'],['Pubis',178,600,'right'],['Vejiga',196,438,'right']];
+  if(s.t<52)L.push(['Placenta',s.cx+s.rx+18,s.cy-s.ry*.62,'left']);
+  if(s.t<50)L.push(['Cérvix',s.cx+70,geomCervix(s).yb+30,'left']);
+  L.forEach(([t,x,y,al])=>{ctx.textAlign=al;ctx.fillText(t,x,y)});ctx.textAlign='left';
+}
+function overlayTitle(s){
+  const a=1-seg(s.t,3,4);if(a<=0)return;
+  ctx.save();ctx.globalAlpha=a;ctx.fillStyle='rgba(238,243,242,.94)';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=C.accent;ctx.font='500 18px '+MONO;ctx.fillText('ANIMACIÓN DE ESTUDIO · GyO',120,270);
+  ctx.fillStyle=C.ink;ctx.font='700 72px '+SERIF;ctx.fillText('Etapas del trabajo de parto',120,350);
+  ctx.fillStyle=C.muted;ctx.font='400 28px '+SANS;ctx.fillText('De la fase latente al alumbramiento',120,404);ctx.restore();
+}
+function overlaySummary(s){
+  const a=seg(s.t,68,69.2);if(a<=0)return;
+  ctx.save();ctx.globalAlpha=a;ctx.fillStyle='rgba(238,243,242,.96)';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=C.accent;ctx.font='500 18px '+MONO;ctx.fillText('RESUMEN',120,120);
+  ctx.fillStyle=C.ink;ctx.font='700 54px '+SERIF;ctx.fillText('Los cuatro periodos',120,184);
+  const rows=[['1.º Dilatación','Latente hasta 6 cm, activa de 6 a 10 cm'],['2.º Expulsivo','De 10 cm al nacimiento del bebé'],['3.º Alumbramiento','Del nacimiento a la placenta, 30 min o menos'],['4.º Puerperio inmediato','Primeras 2 h: vigila sangrado, tono uterino y signos vitales']];
+  rows.forEach((r,i)=>{const y=270+i*92;ctx.fillStyle='#ffffff';rr(120,y-46,1040,72,14);ctx.fill();ctx.strokeStyle=C.line;ctx.lineWidth=1.5;ctx.stroke();
+    ctx.fillStyle=C.accent;ctx.font='700 28px '+SERIF;ctx.fillText(r[0],150,y);ctx.fillStyle=C.ink;ctx.font='400 24px '+SANS;ctx.fillText(r[1],520,y)});
+  ctx.restore();
+}
+function draw(t){
+  const s=S(t),g=geomCervix(s),pose=fetusPose(s);
+  ctx.fillStyle=C.bg;ctx.fillRect(0,0,W,H);
+  mother(s);anatomy();cavity(s);if(s.plDesc<=0)placenta(s);
+  canal(s,g);trickle(s);cord(s,pose);fetus(pose);uterusWall(s,g);vulva(s);
+  if(s.plDesc>0)placenta(s);
+  labels(s);caption(s);panel(s);overlayTitle(s);overlaySummary(s);
+}
+
+// ---------- reproductor ----------
+let T=0,playing=false,last=0;
+const playBtn=document.getElementById('play'),scrub=document.getElementById('scrub'),timeEl=document.getElementById('time');
+const fmt=x=>Math.floor(x/60)+':'+String(Math.floor(x%60)).padStart(2,'0');
+const CH=[['Inicio',0],['Fase latente',4],['Fase activa',18],['Expulsivo',32],['Alumbramiento',52],['Resumen',68]];
+const chEl=document.getElementById('chapters');const chBtns=CH.map(([n,at])=>{const b=document.createElement('button');b.className='chip';b.type='button';b.textContent=n;b.addEventListener('click',()=>{T=at;render();setPlaying(true)});chEl.appendChild(b);return b});
+function render(){draw(T);scrub.value=Math.round(T*100);timeEl.textContent=fmt(T)+' / '+fmt(TOTAL);
+  let ci=0;CH.forEach((c,i)=>{if(T>=c[1])ci=i});chBtns.forEach((b,i)=>b.setAttribute('aria-current',String(i===ci)))}
+function setPlaying(p){playing=p;playBtn.textContent=p?'Pausa':(T>=TOTAL?'Repetir':'Reproducir');last=performance.now();if(p)requestAnimationFrame(tick)}
+function tick(now){if(!playing)return;T+=(now-last)/1000;last=now;if(T>=TOTAL){T=TOTAL;render();setPlaying(false);return}render();requestAnimationFrame(tick)}
+playBtn.addEventListener('click',()=>{if(!playing&&T>=TOTAL)T=0;setPlaying(!playing)});
+cv.addEventListener('click',()=>{if(!playing&&T>=TOTAL)T=0;setPlaying(!playing)});
+scrub.addEventListener('input',()=>{T=scrub.value/100;render();if(playing)setPlaying(false)});
+window.renderAt=t=>{T=t;render()};
+T=0;render();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>render());
+})();
+</script>
+
+</body></html>

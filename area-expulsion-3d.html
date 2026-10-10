@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Área de expulsión 3D</title>
+<meta name="description" content="La sala de partos en litotomía: toca cada objeto para saber para qué sirve, con checklist previo al nacimiento.">
+</head><body>
+<style>
+.pf-bar{max-width:1320px;margin:0 auto 14px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 16px;font:500 13px/1.4 'IBM Plex Sans','Segoe UI',Arial,sans-serif}
+.pf-bar a{color:var(--accent,#0d6a7e);text-decoration:none;font-weight:600}
+.pf-bar a:hover{text-decoration:underline}
+.pf-bar span{color:var(--muted,#55626b);max-width:80ch}
+</style>
+<nav class="pf-bar" aria-label="Sitio"><a href="./">← Todos los recursos</a><span>Material educativo esquemático para estudiantes e internos de medicina. No sustituye el protocolo de tu hospital, la indicación de tu adscrito ni el criterio clínico.</span></nav>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Literata:opsz,wght@7..72,500;7..72,700&display=swap">
+<style>
+/* Layout: visor 3D del área de expulsión a la izquierda; ficha del objeto, inventario y checklist a la derecha (se apila en móvil) */
+:root{
+  --bg:#f2f4f3; --surface:#ffffff; --ink:#17222a; --muted:#55626b; --line:#d5dbdb;
+  --accent:#0d6a7e; --accent-ink:#ffffff; --accent-soft:#dcecef; --stage:#e3e9e9;
+  --display:'Literata', Georgia, serif; --body:'IBM Plex Sans', 'Segoe UI', Arial, sans-serif; --mono:'IBM Plex Mono', Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1417; --surface:#162026; --ink:#e5ecee; --muted:#9aa8ae; --line:#29363c;
+  --accent:#55b6cb; --accent-ink:#0a1417; --accent-soft:#1b3138; --stage:#111a1e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1417; --surface:#162026; --ink:#e5ecee; --muted:#9aa8ae; --line:#29363c;
+  --accent:#55b6cb; --accent-ink:#0a1417; --accent-soft:#1b3138; --stage:#111a1e; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;padding:20px 16px 32px}
+.wrap{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(24px,3.2vw,34px);line-height:1.15;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:0;max-width:62ch}
+.grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:920px){.grid{grid-template-columns:minmax(0,1fr)}}
+.viewer{position:relative;background:var(--stage);border:1px solid var(--line);border-radius:10px;overflow:hidden;height:clamp(360px,68vh,720px)}
+.viewer canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+.viewer canvas.hot{cursor:pointer}
+.tip{position:absolute;left:0;top:0;pointer-events:none;font:500 12px/1.2 var(--mono);background:var(--surface);color:var(--ink);border:1px solid var(--accent);border-radius:4px;padding:4px 7px;white-space:nowrap;transform:translate(12px,-120%)}
+.views{position:absolute;right:10px;top:10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;max-width:75%}
+.chip{font:500 12px/1 var(--body);background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:7px 11px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.hint{position:absolute;left:12px;bottom:10px;font:400 12px/1.3 var(--mono);color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:4px 8px;pointer-events:none;max-width:60%}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.eyebrow{font:500 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0}
+.panel h2{font-family:var(--display);font-weight:700;font-size:25px;line-height:1.15;margin:4px 0 0;text-wrap:balance}
+.block h3{font:600 12px/1.2 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+.block p{margin:0}
+.block.tipbox{background:var(--accent-soft);border-radius:8px;padding:12px 14px}
+.block.tipbox h3{color:var(--accent)}
+.nav{display:flex;gap:8px}
+.btn{font:600 13px/1 var(--body);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:9px 12px;cursor:pointer}
+.inv{display:flex;flex-direction:column;gap:12px}
+.inv h4{font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.inv ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.inv button{font:500 12.5px/1.2 var(--body);background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:7px 11px;cursor:pointer}
+.inv button[aria-current="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+details{border-top:1px solid var(--line);padding-top:12px}
+summary{cursor:pointer;font:600 14px/1.3 var(--body)}
+.check{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.check label{display:flex;gap:10px;align-items:flex-start;font-size:14px;cursor:pointer}
+.check input{margin-top:3px;accent-color:var(--accent)}
+footer{font-size:12.5px;color:var(--muted);max-width:90ch}
+@media (max-width:520px){.views{max-width:100%;left:10px;justify-content:flex-start}.hint{display:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Área de expulsión 3D</h1>
+    <p class="sub">El sitio donde se recibe un parto vaginal en litotomía, visto desde donde te sientas. Toca cualquier objeto o elígelo en la lista para ver para qué sirve.</p>
+  </header>
+  <div class="grid">
+    <div class="viewer" id="viewer">
+      <div class="views" role="group" aria-label="Vistas">
+        <button class="chip" data-view="gen" aria-pressed="true">General</button>
+        <button class="chip" data-view="att">Quien atiende</button>
+        <button class="chip" data-view="top">Cenital</button>
+      </div>
+      <div class="tip" id="tip" hidden></div>
+      <div class="hint">Arrastra para girar · rueda o pellizca para acercar · clic derecho o dos dedos para desplazar</div>
+    </div>
+    <aside class="panel">
+      <div>
+        <p class="eyebrow" id="cat">Paciente y mesa</p>
+        <h2 id="name">Mesa obstétrica</h2>
+      </div>
+      <div class="block"><h3>Para qué sirve</h3><p id="para"></p></div>
+      <div class="block tipbox"><h3>Tip de interno</h3><p id="tipTxt"></p></div>
+      <div class="nav"><button class="btn" id="prev">◀ Anterior</button><button class="btn" id="next">Siguiente ▶</button></div>
+      <div class="inv" id="inv"></div>
+      <details open>
+        <summary>Antes de que nazca, verifica</summary>
+        <ul class="check">
+          <li><label><input type="checkbox" id="c1"> Mesa con frenos, altura correcta y sección de pies retirada</label></li>
+          <li><label><input type="checkbox" id="c2"> Mayo completa: 2 Kelly, tijeras, pinza umbilical y oxitocina cargada</label></li>
+          <li><label><input type="checkbox" id="c3"> Gasas contadas en voz alta</label></li>
+          <li><label><input type="checkbox" id="c4"> Cuna térmica encendida, campos tibios y bolsa-mascarilla probada</label></li>
+          <li><label><input type="checkbox" id="c5"> Oxígeno y aspiración funcionando</label></li>
+          <li><label><input type="checkbox" id="c6"> Pediatría avisada y vía IV permeable</label></li>
+        </ul>
+      </details>
+    </aside>
+  </div>
+  <footer>Modelo esquemático de un área de expulsión típica, en metros. La distribución real cambia en cada hospital: ubica el carro rojo, la cuna y las tomas de pared en tu primera guardia.</footer>
+</div>
+
+<script src="assets/vendor/three/three.min.js"></script>
+<script src="assets/vendor/three/OrbitControls.js"></script>
+<script>
+(function(){
+const D=Math.PI/180;
+const viewer=document.getElementById('viewer');
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+viewer.insertBefore(renderer.domElement,viewer.firstChild);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(42,1,0.05,60);
+const controls=new THREE.OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=0.08;controls.minDistance=0.35;controls.maxDistance=9;controls.maxPolarAngle=88*D;
+
+function applyTheme(){scene.background=new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--stage').trim()||'#e3e9e9')}
+applyTheme();
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme)}catch(e){}
+new MutationObserver(applyTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x9aa7a3,0.7));
+const key=new THREE.DirectionalLight(0xffffff,0.55);key.position.set(3,5,4);key.castShadow=true;key.shadow.mapSize.set(1024,1024);
+Object.assign(key.shadow.camera,{left:-3,right:3,top:3,bottom:-3,near:1,far:15});scene.add(key);
+
+// ---------- helpers ----------
+const mat=(c,o)=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:0.6,metalness:0},o||{}));
+const STEEL=mat(0xc3cacf,{metalness:0.35,roughness:0.35}), DARK=mat(0x3a4148), VINYL=mat(0x4f6683,{roughness:0.5}),
+      DRAPE=mat(0x2f7f8f,{roughness:0.9}), GOWN=mat(0xa9c2d4,{roughness:0.85}), SKIN=mat(0xd9a689), WHITE=mat(0xf3f3ef,{roughness:0.9}),
+      RED=mat(0xb8322a,{roughness:0.5}), PLASTIC=mat(0xe9eef0,{roughness:0.4});
+function add(geo,m,x,y,z,parent){const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;(parent||scene).add(o);return o}
+const box=(w,h,d,m,x,y,z,p)=>add(new THREE.BoxGeometry(w,h,d),m,x,y,z,p);
+const cyl=(rt,rb,h,m,x,y,z,p,seg)=>add(new THREE.CylinderGeometry(rt,rb,h,seg||24),m,x,y,z,p);
+const sph=(r,m,x,y,z,p)=>add(new THREE.SphereGeometry(r,24,16),m,x,y,z,p);
+const Y=new THREE.Vector3(0,1,0);
+function rod(a,b,r,m,p,caps){a=new THREE.Vector3(...a);b=new THREE.Vector3(...b);const d=b.clone().sub(a);const L=d.length();
+  const o=add(new THREE.CylinderGeometry(r,r,L,20),m,0,0,0,p);o.position.copy(a).add(b).multiplyScalar(0.5);o.quaternion.setFromUnitVectors(Y,d.normalize());
+  if(caps){sph(r,m,a.x,a.y,a.z,p);sph(r,m,b.x,b.y,b.z,p)}return o}
+function tubeAlong(pts,r,m,p){const c=new THREE.CatmullRomCurve3(pts.map(q=>new THREE.Vector3(...q)));return add(new THREE.TubeGeometry(c,48,r,8,false),m,0,0,0,p)}
+const G=()=>{const g=new THREE.Group();scene.add(g);return g};
+
+// ---------- sala ----------
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(6,6),mat(0xc6d0cc,{roughness:0.95}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+const grid=new THREE.GridHelper(6,20,0xaab7b2,0xb7c3bf);grid.position.y=0.002;scene.add(grid);
+const WALL=mat(0xd5e3df,{roughness:0.95});
+const back=new THREE.Mesh(new THREE.PlaneGeometry(5,3),WALL);back.position.set(0.2,1.5,-2.1);back.receiveShadow=true;scene.add(back);
+const left=new THREE.Mesh(new THREE.PlaneGeometry(4.2,3),WALL);left.position.set(-2.3,1.5,-0.0);left.rotation.y=Math.PI/2;left.receiveShadow=true;scene.add(left);
+
+// ---------- registro de objetos ----------
+const ITEMS=[];
+function item(key,name,cat,para,tip,group,dir){ITEMS.push({key,name,cat,para,tip,group,dir:dir?new THREE.Vector3(...dir).normalize():null});group.userData.key=key;return group}
+
+// Mesa obstétrica
+const bed=G();
+box(0.62,0.06,0.95,DARK,0,0.03,-0.62,bed);
+box(0.4,0.62,0.42,mat(0xd9dee2),0,0.37,-0.6,bed);
+box(0.64,0.1,0.46,DARK,0,0.83,-0.18,bed);
+box(0.6,0.1,0.42,VINYL,0,0.93,-0.17,bed);
+const backPivot=new THREE.Group();backPivot.position.set(0,0.93,-0.38);backPivot.rotation.x=38*D;bed.add(backPivot);
+box(0.6,0.1,0.95,VINYL,0,0,-0.475,backPivot);box(0.64,0.08,0.95,DARK,0,-0.09,-0.475,backPivot);
+[-1,1].forEach(s=>{rod([s*0.33,0.95,-0.36],[s*0.33,0.95,0.0],0.012,STEEL,bed);rod([s*0.36,0.95,-0.3],[s*0.36,1.12,-0.3],0.016,STEEL,bed);sph(0.025,DARK,s*0.36,1.13,-0.3,bed)});
+box(0.58,0.06,0.36,VINYL,0,0.66,-0.12,bed); // sección de pies retraída
+item('mesa','Mesa obstétrica','Paciente y mesa',
+ 'Se retira la sección de pies para que los glúteos queden justo al borde y tengas acceso al periné. El respaldo se eleva 30 a 45° para facilitar el pujo. Las agarraderas laterales sirven para que la paciente se sostenga al pujar.',
+ 'Antes de pasar a la paciente: frenos puestos, altura a la de tus codos sentado y sección de pies retirada.',bed,[1.2,0.7,0.6]);
+
+// Pierneras
+const legs=G();
+[-1,1].forEach(s=>{
+  rod([s*0.34,0.9,-0.12],[s*0.36,1.18,0.22],0.016,STEEL,legs);
+  box(0.05,0.05,0.06,DARK,s*0.34,0.9,-0.12,legs);
+  const boot=rod([s*0.33,1.32,0.06],[s*0.38,1.12,0.42],0.07,mat(0x2c3238,{roughness:0.8}),legs,true);
+});
+item('pierneras','Pierneras','Paciente y mesa',
+ 'Sostienen las pantorrillas en litotomía, con cadera y rodillas flexionadas.',
+ 'Sube y baja ambas piernas al mismo tiempo y acolchona la cara lateral de la rodilla: el nervio peroneo común se lesiona por compresión.',legs,[1,0.5,1]);
+
+// Paciente
+const pt=G();
+const P=new THREE.Vector3(0,0.98,-0.38), u=new THREE.Vector3(0,Math.sin(38*D),-Math.cos(38*D)), n=new THREE.Vector3(0,Math.cos(38*D),Math.sin(38*D));
+const at=(a,b)=>P.clone().add(u.clone().multiplyScalar(a)).add(n.clone().multiplyScalar(b));
+const tA=at(0.05,0.12),tB=at(0.62,0.12);
+rod(tA.toArray(),tB.toArray(),0.17,GOWN,pt,true);
+const belly=sph(1,GOWN,0,0,0,pt);belly.scale.set(0.19,0.17,0.2);belly.position.copy(at(0.22,0.24));
+const head=sph(0.105,SKIN,0,0,0,pt);head.position.copy(at(0.86,0.14));
+const hair=sph(0.11,mat(0x2e2420),0,0,0,pt);hair.position.copy(at(0.9,0.12));hair.scale.set(1,0.9,1);
+[-1,1].forEach(s=>{
+  rod([s*0.11,1.04,-0.2],[s*0.3,1.46,0.02],0.085,DRAPE,pt,true);
+  rod([s*0.3,1.46,0.02],[s*0.36,1.22,0.4],0.07,DRAPE,pt,true);
+  const sh=at(0.55,0.12);rod([s*0.2,sh.y,sh.z],[s*0.24,1.08,-0.3],0.045,GOWN,pt,true); // brazos
+});
+box(0.62,0.008,0.34,DRAPE,0,1.0,-0.42,pt).rotation.x=-12*D; // campo abdominal
+// transductores del monitor
+const trs=[];[-0.08,0.09].forEach((dx,i)=>{const c=at(0.24+i*0.06,0.42);const t=cyl(0.045,0.045,0.025,i?mat(0xd8d2c4):mat(0xc9d6de),c.x+dx,c.y,c.z,pt);t.quaternion.setFromUnitVectors(Y,n);trs.push(t.position.clone())});
+item('paciente','Paciente en litotomía','Paciente y mesa',
+ 'Glúteos al borde de la mesa, piernas en las pierneras y campos estériles sobre piernas y abdomen. Los transductores del monitor fetal siguen sobre el abdomen hasta el nacimiento.',
+ 'Explícale cada paso antes de tocarla y descubre solo el periné.',pt,[0.9,0.6,1]);
+
+// Campo bajo glúteos con bolsa colectora
+const pouch=G();
+box(0.7,0.006,0.3,DRAPE,0,0.985,-0.1,pouch);
+const bag=new THREE.Mesh(new THREE.CylinderGeometry(0.24,0.03,0.48,32,1,true),new THREE.MeshStandardMaterial({color:0xcfe6ee,transparent:true,opacity:0.55,side:THREE.DoubleSide,roughness:0.2}));
+bag.position.set(0,0.72,0.14);pouch.add(bag);
+for(let i=1;i<=4;i++){const yy=0.5+i*0.09,r=0.03+(0.21)*(yy-0.48)/0.48;const ring=new THREE.Mesh(new THREE.TorusGeometry(r,0.003,6,40),mat(0x1d4f63));ring.rotation.x=Math.PI/2;ring.position.set(0,yy,0.14);pouch.add(ring)}
+item('bolsa','Campo con bolsa colectora graduada','Paciente y mesa',
+ 'Va bajo los glúteos y recoge sangre y líquido en una bolsa graduada, para medir la pérdida en lugar de estimarla a ojo.',
+ 'La OMS define hemorragia posparto como 500 mL o más tras parto vaginal. A ojo casi siempre se subestima.',pouch,[0.7,0.2,1]);
+
+// Cubeta
+const bucket=G();
+const bk=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.17,0.3,32,1,true),Object.assign(STEEL.clone(),{side:THREE.DoubleSide}));bk.position.set(0,0.15,0.16);bk.castShadow=true;bucket.add(bk);
+cyl(0.17,0.17,0.01,STEEL,0,0.005,0.16,bucket);
+[[-1,1],[1,1],[-1,-1],[1,-1]].forEach(([a,b])=>sph(0.02,DARK,a*0.13,0.02,0.16+b*0.13,bucket));
+item('cubeta','Cubeta','Paciente y mesa',
+ 'Recibe lo que escurre del campo y de la bolsa colectora.',
+ 'Si la bolsa se llena rápido, dilo en voz alta: puede ser el primer signo de hemorragia.',bucket,[0.6,0.6,1]);
+
+// Banco
+const stool=G();
+cyl(0.2,0.2,0.07,mat(0x3c4c63),0,0.6,0.78,stool);cyl(0.03,0.03,0.5,STEEL,0,0.34,0.78,stool);
+for(let i=0;i<5;i++){const a=i*72*D;rod([0,0.06,0.78],[Math.cos(a)*0.24,0.04,0.78+Math.sin(a)*0.24],0.015,DARK,stool);sph(0.025,DARK,Math.cos(a)*0.24,0.025,0.78+Math.sin(a)*0.24,stool)}
+item('banco','Banco de quien atiende','Paciente y mesa',
+ 'Te sientas frente al periné, con los codos a la altura del periné de la paciente.',
+ 'Si te queda bajo, sube el banco o baja la mesa: encorvado pierdes control de la cabeza fetal.',stool,[0.9,0.8,1]);
+
+// Lámpara
+const lamp=G();
+cyl(0.12,0.12,0.04,STEEL,0.1,2.98,-0.4,lamp);rod([0.1,2.98,-0.4],[0.1,2.65,-0.4],0.025,STEEL,lamp);rod([0.1,2.65,-0.4],[0.32,2.2,0.35],0.022,STEEL,lamp);
+const dish=new THREE.Group();dish.position.set(0.32,2.15,0.42);lamp.add(dish);
+const dshell=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.3,0.1,40),mat(0xe8ecee));dish.add(dshell);
+const glow=new THREE.Mesh(new THREE.CircleGeometry(0.26,40),new THREE.MeshBasicMaterial({color:0xfffbe8}));glow.position.y=-0.052;glow.rotation.x=Math.PI/2;dish.add(glow);
+dish.lookAt(0,0.95,0);dish.rotateX(-Math.PI/2);
+const spot=new THREE.SpotLight(0xfff6e0,0.7,6,24*D,0.5);spot.position.set(0.32,2.12,0.42);spot.target.position.set(0,0.95,0);scene.add(spot,spot.target);
+item('lampara','Lámpara quirúrgica','Paciente y mesa',
+ 'Ilumina el periné para el nacimiento, la revisión del canal y la reparación de desgarros.',
+ 'Ajústala antes de enguantarte o usa el mango estéril.',lamp,[0.8,0.2,1]);
+
+// Mesa de Mayo
+const mayo=G();
+box(0.5,0.02,0.36,STEEL,0.62,1.0,0.5,mayo);box(0.52,0.006,0.38,mat(0x3d8a98,{roughness:0.9}),0.62,1.013,0.5,mayo);
+rod([0.9,0.02,0.5],[0.9,0.99,0.5],0.02,STEEL,mayo);rod([0.9,0.99,0.5],[0.86,1.0,0.5],0.02,STEEL,mayo);
+box(0.06,0.03,0.6,STEEL,0.9,0.015,0.5,mayo);box(0.4,0.03,0.06,STEEL,0.72,0.015,0.22,mayo);
+const TOP=1.02;
+function instrument(x,ringMat,jaw,parent){const g=new THREE.Group();g.position.set(x,TOP,0.36);parent.add(g);
+  box(0.006,0.006,jaw,STEEL,-0.004,0.004,jaw/2,g);box(0.006,0.006,jaw,STEEL,0.004,0.004,jaw/2,g);
+  [-1,1].forEach(s=>{const r=new THREE.Mesh(new THREE.TorusGeometry(0.014,0.0035,8,20),ringMat||STEEL);r.rotation.x=Math.PI/2;r.position.set(s*0.013,0.004,jaw+0.012);g.add(r)});return g}
+const kelly=new THREE.Group();scene.add(kelly);instrument(0.44,null,0.13,kelly);instrument(0.49,null,0.13,kelly);
+item('kelly','Pinzas Kelly (2)','Mesa de Mayo','Pinzan el cordón umbilical; se corta entre ambas.','En un bebé vigoroso, pinzamiento tardío de al menos 30 a 60 s.',kelly,[0.45,1.3,0.55]);
+const tij=new THREE.Group();scene.add(tij);const tg=instrument(0.55,null,0.12,tij);tg.children[0].rotation.y=5*D;tg.children[1].rotation.y=-5*D;
+item('tijeras','Tijeras','Mesa de Mayo','Corte del cordón entre las pinzas. La episiotomía solo se hace si hay indicación, no de rutina.','Al cortar, protege con tu mano el cordón y los dedos del bebé.',tij,[0.45,1.3,0.55]);
+const pa=new THREE.Group();scene.add(pa);instrument(0.61,mat(0xc9a64a,{metalness:0.4,roughness:0.3}),0.12,pa);
+item('portaagujas','Portaagujas','Mesa de Mayo','Sujeta la aguja para reparar desgarros o episiotomía.','Revisa el canal completo antes de suturar, incluido el cérvix, y el recto si el desgarro es profundo.',pa,[0.45,1.3,0.55]);
+const dis=new THREE.Group();scene.add(dis);const dg=new THREE.Group();dg.position.set(0.67,TOP,0.36);dis.add(dg);
+box(0.006,0.005,0.14,STEEL,-0.004,0.004,0.07,dg).rotation.y=2*D;box(0.006,0.005,0.14,STEEL,0.004,0.004,0.07,dg).rotation.y=-2*D;
+item('diseccion','Pinza de disección','Mesa de Mayo','Sujeta tejido durante la reparación.','Con dientes para piel, sin dientes para mucosa.',dis,[0.45,1.3,0.55]);
+const umb=new THREE.Group();scene.add(umb);[0.38,0.42].forEach(z=>{box(0.055,0.012,0.016,mat(0x2f6fbf),0.78,TOP+0.008,z,umb);box(0.01,0.014,0.018,PLASTIC,0.755,TOP+0.008,z,umb)});
+item('umbilical','Pinza umbilical','Mesa de Mayo','Pinza de plástico definitiva; se coloca a 2 o 3 cm de la piel del abdomen del bebé.','Antes de cortar, cuenta los vasos del cordón: 2 arterias y 1 vena.',umb,[0.45,1.3,0.55]);
+const jer=new THREE.Group();scene.add(jer);
+const barrel=cyl(0.009,0.009,0.09,PLASTIC,0.78,TOP+0.012,0.5,jer);barrel.rotation.z=Math.PI/2;
+const plunger=cyl(0.004,0.004,0.05,mat(0xffffff),0.84,TOP+0.012,0.5,jer);plunger.rotation.z=Math.PI/2;
+const needle=cyl(0.0012,0.0012,0.035,STEEL,0.717,TOP+0.012,0.5,jer);needle.rotation.z=Math.PI/2;
+box(0.04,0.0015,0.012,mat(0xe0a63a),0.78,TOP+0.0215,0.5,jer);
+item('jeringa','Jeringa con oxitocina 10 UI','Mesa de Mayo','Manejo activo del alumbramiento: 10 UI IM al nacer para prevenir hemorragia posparto.','Tenla cargada y etiquetada antes del nacimiento.',jer,[0.45,1.3,0.55]);
+const sut=new THREE.Group();scene.add(sut);box(0.06,0.006,0.09,mat(0x6b4fa8),0.8,TOP+0.004,0.61,sut);box(0.05,0.0015,0.03,mat(0xf1eee6),0.8,TOP+0.008,0.59,sut);
+item('sutura','Sutura absorbible','Mesa de Mayo','Para reparar episiotomía y desgarros; suele usarse 2-0 o 3-0 de absorción rápida.','Al terminar, cuenta las agujas junto con las gasas.',sut,[0.45,1.3,0.55]);
+const gas=new THREE.Group();scene.add(gas);for(let i=0;i<4;i++)box(0.08,0.008,0.08,WHITE,0.69,TOP+0.005+i*0.009,0.61,gas).rotation.y=i*4*D;
+item('gasas','Gasas y compresas','Mesa de Mayo','Limpieza, secado y protección del periné.','Cuenta gasas antes y después: una gasa olvidada en vagina es un evento centinela.',gas,[0.45,1.3,0.55]);
+const per=new THREE.Group();scene.add(per);const bulb=sph(0.032,mat(0x3e7fd0,{roughness:0.35}),0.47,TOP+0.03,0.61,per);bulb.scale.set(1,0.9,1.2);
+const tipc=cyl(0.004,0.012,0.05,mat(0x3e7fd0),0.47,TOP+0.02,0.55,per);tipc.rotation.x=-Math.PI/2;
+item('perilla','Perilla de aspiración','Mesa de Mayo','Aspira boca y nariz solo si hay secreciones que obstruyen la vía aérea.','No es rutinaria. Si la usas, primero boca y luego nariz.',per,[0.45,1.3,0.55]);
+item('mayo','Mesa de Mayo','Mesa de Mayo','Mesa estéril a tu derecha con el instrumental para el nacimiento y la reparación, al alcance de la mano sin levantarte.','Acomoda siempre en el mismo orden: así encuentras las pinzas sin mirar.',mayo,[0.4,0.9,1]);
+
+// Mesa auxiliar: palangana y punzocortantes
+const aux=G();
+box(0.5,0.02,0.4,STEEL,-0.62,0.8,0.55,aux);[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>rod([-0.62+a*0.22,0,0.55+b*0.17],[-0.62+a*0.22,0.8,0.55+b*0.17],0.012,STEEL,aux));
+box(0.46,0.015,0.36,STEEL,-0.62,0.3,0.55,aux);
+item('auxiliar','Mesa auxiliar','Vigilancia y seguridad','Superficie limpia a tu izquierda para la placenta y para descartar material.','Mantén separado lo estéril de lo que ya se usó.',aux,[-0.6,0.8,1]);
+const pal=G();
+const basin=new THREE.Mesh(new THREE.SphereGeometry(0.15,32,16,0,Math.PI*2,Math.PI/2,Math.PI/2.6),Object.assign(STEEL.clone(),{side:THREE.DoubleSide}));basin.position.set(-0.68,0.93,0.55);basin.scale.set(1.25,0.75,0.85);basin.castShadow=true;pal.add(basin);
+item('palangana','Palangana para placenta','Vigilancia y seguridad','Recibe la placenta para revisarla completa: cotiledones, membranas y cordón.','Si falta un cotiledón o hay vasos que terminan en las membranas, sospecha retención y avisa.',pal,[-0.4,1,0.8]);
+const sharp=G();box(0.13,0.17,0.11,mat(0xc0392b,{roughness:0.45}),-0.44,0.895,0.6,sharp);box(0.135,0.03,0.115,mat(0x8e2a20),-0.44,0.99,0.6,sharp);
+item('punzo','Contenedor de punzocortantes','Vigilancia y seguridad','Agujas y hojas de bisturí van directo aquí, sin reencapuchar.','Ubícalo antes de empezar para no caminar con una aguja en la mano.',sharp,[-0.3,0.8,1]);
+
+// Monitor fetal
+const ctg=G();const cx=-0.95,cz=-0.55;
+box(0.42,0.04,0.4,DARK,cx,0.08,cz,ctg);[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>sph(0.03,DARK,cx+a*0.18,0.03,cz+b*0.17,ctg));
+rod([cx,0.1,cz],[cx,0.8,cz],0.025,STEEL,ctg);box(0.42,0.03,0.34,mat(0xd9dee2),cx,0.82,cz,ctg);
+const mon=new THREE.Group();mon.position.set(cx,1.0,cz);mon.rotation.y=40*D;ctg.add(mon);
+box(0.38,0.3,0.12,mat(0xe3e6e8),0,0,0,mon);
+const cv=document.createElement('canvas');cv.width=512;cv.height=320;const g2=cv.getContext('2d');
+g2.fillStyle='#fbeef0';g2.fillRect(0,0,512,320);g2.strokeStyle='#e7b3bd';g2.lineWidth=1;
+for(let x=0;x<512;x+=16){g2.beginPath();g2.moveTo(x,0);g2.lineTo(x,320);g2.stroke()}for(let y=0;y<320;y+=16){g2.beginPath();g2.moveTo(0,y);g2.lineTo(512,y);g2.stroke()}
+g2.fillStyle='#d9eef2';g2.fillRect(0,48,512,64);
+g2.strokeStyle='#1b2830';g2.lineWidth=2.4;g2.beginPath();for(let x=0;x<512;x++){const y=88-Math.sin(x*0.21)*5-Math.sin(x*0.057)*4-(x>300&&x<360?Math.sin((x-300)/60*Math.PI)*18:0);x?g2.lineTo(x,y):g2.moveTo(x,y)}g2.stroke();
+g2.strokeStyle='#1b2830';g2.beginPath();for(let x=0;x<512;x++){const ph=(x%170)/170;const y=290-Math.max(0,Math.sin(ph*Math.PI))**2*80;x?g2.lineTo(x,y):g2.moveTo(x,y)}g2.stroke();
+g2.fillStyle='#1b2830';g2.font='600 26px monospace';g2.fillText('FCF 142',14,30);g2.fillText('TOCO',14,200);
+const screen=new THREE.Mesh(new THREE.PlaneGeometry(0.33,0.21),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv)}));screen.position.set(0,0.02,0.061);mon.add(screen);
+const mp=new THREE.Vector3(0.1,-0.12,0.05).applyMatrix4(new THREE.Matrix4().makeRotationY(40*D)).add(mon.position);
+trs.forEach((t,i)=>tubeAlong([mp.toArray(),[cx+0.35,0.95-i*0.05,cz+0.15],[-0.35,1.05,-0.3],t.toArray()],0.005,i?mat(0xd8d2c4):mat(0x7aa7c2),ctg));
+item('monitor','Monitor fetal (cardiotocógrafo)','Vigilancia y seguridad','Registra la FCF y las contracciones con dos transductores sobre el abdomen: ultrasonido y tocodinamómetro.','Con el pujo la FCF puede bajar; vigila que recupere entre contracciones y que la variabilidad se mantenga.',ctg,[0.6,0.4,1]);
+
+// Bomba de infusión y soluciones
+const iv=G();const ix=-0.72,iz=-1.25;
+for(let i=0;i<5;i++){const a=i*72*D;rod([ix,0.05,iz],[ix+Math.cos(a)*0.26,0.03,iz+Math.sin(a)*0.26],0.012,DARK,iv)}
+rod([ix,0.03,iz],[ix,2.0,iz],0.013,STEEL,iv);rod([ix-0.15,1.98,iz],[ix+0.15,1.98,iz],0.008,STEEL,iv);
+const sol=box(0.12,0.2,0.04,new THREE.MeshStandardMaterial({color:0xe7f1f6,transparent:true,opacity:0.8,roughness:0.2}),ix+0.12,1.82,iz,iv);
+box(0.16,0.2,0.12,mat(0xeef1f2),ix+0.09,1.25,iz,iv);box(0.1,0.05,0.002,mat(0x1d4f63),ix+0.09,1.29,iz+0.061,iv);
+tubeAlong([[ix+0.12,1.71,iz],[ix+0.12,1.4,iz+0.02],[ix+0.09,1.36,iz+0.05]],0.003,PLASTIC,iv);
+tubeAlong([[ix+0.09,1.15,iz+0.05],[ix+0.2,0.9,iz+0.5],[-0.3,1.05,-0.45],[-0.25,1.08,-0.32]],0.003,PLASTIC,iv);
+item('bomba','Bomba de infusión y soluciones','Vigilancia y seguridad','Vía IV para líquidos, oxitocina en infusión y medicamentos de urgencia.','Toda paciente en expulsivo debe tener una vía IV permeable, idealmente calibre 18.',iv,[0.8,0.5,1]);
+
+// Carro rojo
+const crash=G();
+box(0.62,0.9,0.46,RED,-1.7,0.5,0.55,crash);for(let i=0;i<4;i++)box(0.58,0.012,0.005,mat(0x7d1f19),-1.7,0.2+i*0.2,0.785,crash);
+for(let i=0;i<4;i++)box(0.2,0.02,0.02,STEEL,-1.7,0.27+i*0.2,0.8,crash);
+[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>sph(0.035,DARK,-1.7+a*0.26,0.035,0.55+b*0.19,crash));
+box(0.32,0.12,0.26,mat(0x3f4a52),-1.72,1.01,0.52,crash);box(0.12,0.07,0.002,mat(0x2fa36b),-1.66,1.03,0.651,crash);
+item('carro','Carro rojo y kit de hemorragia','Vigilancia y seguridad','Medicamentos y equipo de reanimación, desfibrilador, uterotónicos y material para hemorragia obstétrica.','Antes de tu primera guardia, ubícalo y revisa qué uterotónicos tiene.',crash,[0.8,0.6,1]);
+
+// Cuna de calor radiante
+const warm=G();const wx=1.55,wz=-0.65;
+box(0.7,0.08,0.55,DARK,wx,0.06,wz,warm);[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>sph(0.035,DARK,wx+a*0.3,0.035,wz+b*0.24,warm));
+box(0.56,0.62,0.42,mat(0xe6eaec),wx,0.42,wz,warm);box(0.78,0.06,0.55,mat(0xdfe4e7),wx,0.79,wz,warm);
+box(0.68,0.05,0.46,mat(0x7fb7c4,{roughness:0.5}),wx,0.845,wz,warm);
+const plexi=new THREE.MeshStandardMaterial({color:0xdff3f7,transparent:true,opacity:0.3,roughness:0.1,depthWrite:false});
+box(0.74,0.12,0.006,plexi,wx,0.88,wz+0.27,warm);box(0.74,0.12,0.006,plexi,wx,0.88,wz-0.27,warm);box(0.006,0.12,0.54,plexi,wx+0.37,0.88,wz,warm);
+rod([wx-0.36,0.82,wz-0.3],[wx-0.36,1.95,wz-0.3],0.035,mat(0xe6eaec),warm);
+box(0.14,0.22,0.1,mat(0xeef1f2),wx-0.36,1.35,wz-0.22,warm);
+const clock=box(0.09,0.05,0.004,mat(0x14323d),wx-0.36,1.4,wz-0.168,warm);
+const heater=box(0.7,0.08,0.3,mat(0xe6eaec),wx-0.02,1.9,wz-0.08,warm);
+box(0.62,0.01,0.22,new THREE.MeshBasicMaterial({color:0xff9a52}),wx-0.02,1.855,wz-0.08,warm);
+const hl=new THREE.PointLight(0xff9a52,0.35,1.4);hl.position.set(wx,1.75,wz);scene.add(hl);
+box(0.2,0.04,0.16,WHITE,wx-0.15,0.89,wz+0.1,warm);box(0.2,0.04,0.16,mat(0xf4e9d8,{roughness:0.95}),wx-0.15,0.93,wz+0.1,warm);
+item('cuna','Cuna de calor radiante','Recién nacido','Recibe al bebé cuando necesita evaluación o reanimación: fuente de calor, colchón firme, campos tibios y reloj para el Apgar al minuto y a los 5 minutos.','Enciéndela y precaliéntala antes del nacimiento.',warm,[-0.3,0.8,1]);
+const bvm=G();const bg=sph(1,new THREE.MeshStandardMaterial({color:0x8fd4a8,transparent:true,opacity:0.85,roughness:0.3}),wx+0.12,0.92,wz-0.08,bvm);bg.scale.set(0.09,0.045,0.05);
+const mask=cyl(0.012,0.035,0.03,new THREE.MeshStandardMaterial({color:0xe9f2f4,transparent:true,opacity:0.8}),wx+0.24,0.92,wz-0.08,bvm);mask.rotation.z=-Math.PI/2;
+cyl(0.012,0.012,0.04,mat(0x4a8a5f),wx+0.21,0.92,wz-0.08,bvm).rotation.z=Math.PI/2;
+item('bvm','Bolsa-mascarilla','Recién nacido','Ventilación con presión positiva si el bebé no respira o tiene FC menor de 100 después de los pasos iniciales.','Antes de cada parto revisa el tamaño de la mascarilla y que la bolsa infle.',bvm,[-0.2,1,0.7]);
+
+// Tomas de pared
+const wall=G();const px=1.45;
+box(0.6,0.3,0.04,mat(0xeef1f2),px,1.5,-2.08,wall);
+cyl(0.025,0.025,0.12,mat(0x2fa36b),px-0.15,1.5,-2.0,wall);sph(0.03,mat(0xdfe8e4),px-0.15,1.58,-2.0,wall);
+const can=cyl(0.06,0.06,0.18,new THREE.MeshStandardMaterial({color:0xe8f3f6,transparent:true,opacity:0.6,roughness:0.15}),px+0.12,1.48,-1.98,wall);
+cyl(0.062,0.062,0.03,mat(0x2f6fbf),px+0.12,1.58,-1.98,wall);
+tubeAlong([[px+0.12,1.58,-1.98],[px+0.2,1.3,-1.6],[wx+0.25,1.0,wz-0.2]],0.006,PLASTIC,wall);
+item('oxigeno','Toma de oxígeno y aspiración','Recién nacido','Oxígeno y succión de pared para el bebé y para la madre.','Abre la succión y verifica que jale antes del nacimiento.',wall,[0,0.3,1]);
+
+// ---------- interacción ----------
+ITEMS.forEach(it=>it.group.traverse(o=>{if(o.isMesh&&o.material&&o.material.isMeshStandardMaterial){o.material=o.material.clone();o.userData.base=o.material.emissive.getHex()}}));
+const byKey={};ITEMS.forEach(it=>byKey[it.key]=it);
+const order=['mesa','paciente','pierneras','bolsa','cubeta','banco','lampara','mayo','kelly','tijeras','umbilical','jeringa','gasas','perilla','portaagujas','diseccion','sutura','cuna','bvm','oxigeno','monitor','bomba','auxiliar','palangana','punzo','carro'];
+const CATS=['Paciente y mesa','Mesa de Mayo','Recién nacido','Vigilancia y seguridad'];
+const inv=document.getElementById('inv');const invBtns={};
+CATS.forEach(c=>{const d=document.createElement('div');const h=document.createElement('h4');h.textContent=c;d.appendChild(h);const ul=document.createElement('ul');
+  order.filter(k=>byKey[k].cat===c).forEach(k=>{const li=document.createElement('li');const b=document.createElement('button');b.type='button';b.textContent=byKey[k].name;b.addEventListener('click',()=>select(k,true));invBtns[k]=b;li.appendChild(b);ul.appendChild(li)});
+  d.appendChild(ul);inv.appendChild(d)});
+
+const accentHex=0x1e8aa3;let current=null;
+function highlight(it,on){it.group.traverse(o=>{if(o.isMesh&&o.material&&o.material.emissive){o.material.emissive.setHex(on?accentHex:o.userData.base);o.material.emissiveIntensity=on?0.3:1}})}
+let camAnim=null;
+function flyTo(p,t){const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;if(reduce){camera.position.copy(p);controls.target.copy(t);return}camAnim={fp:camera.position.clone(),ft:controls.target.clone(),p,t,s:performance.now()}}
+function select(k,fly){const it=byKey[k];if(current)highlight(current,false);current=it;highlight(it,true);
+  document.getElementById('cat').textContent=it.cat;document.getElementById('name').textContent=it.name;
+  document.getElementById('para').textContent=it.para;document.getElementById('tipTxt').textContent=it.tip;
+  Object.entries(invBtns).forEach(([kk,b])=>b.setAttribute('aria-current',String(kk===k)));
+  if(fly){const bb=new THREE.Box3().setFromObject(it.group);const c=bb.getCenter(new THREE.Vector3());const s=bb.getSize(new THREE.Vector3());
+    const dist=Math.min(3.4,Math.max(0.42,Math.max(s.x,s.y,s.z)*2.3));const dir=it.dir||new THREE.Vector3(0.55,0.55,1).normalize();
+    flyTo(c.clone().add(dir.clone().multiplyScalar(dist)),c);
+    document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed','false'))}}
+document.getElementById('prev').addEventListener('click',()=>{const i=order.indexOf(current.key);select(order[(i-1+order.length)%order.length],true)});
+document.getElementById('next').addEventListener('click',()=>{const i=order.indexOf(current.key);select(order[(i+1)%order.length],true)});
+
+const VIEWS={gen:{p:[2.3,2.1,2.7],t:[0.05,0.95,-0.25]},att:{p:[0,1.5,1.85],t:[0,1.0,-0.1]},top:{p:[0.2,6.2,0.6],t:[0.1,0.5,-0.3]}};
+function goView(k,instant){const v=VIEWS[k];const p=new THREE.Vector3(...v.p),t=new THREE.Vector3(...v.t);
+  document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===k)));
+  if(instant){camera.position.copy(p);controls.target.copy(t);controls.update()}else flyTo(p,t)}
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>goView(b.dataset.view)));
+
+const ray=new THREE.Raycaster(),ptr=new THREE.Vector2();const groups=ITEMS.map(i=>i.group);
+function pick(ev){const r=renderer.domElement.getBoundingClientRect();ptr.set(((ev.clientX-r.left)/r.width)*2-1,-((ev.clientY-r.top)/r.height)*2+1);ray.setFromCamera(ptr,camera);
+  const hits=ray.intersectObjects(groups,true);for(const h of hits){let o=h.object;while(o&&!o.userData.key)o=o.parent;if(o){
+    return byKey[o.userData.key]}}return null}
+const tip=document.getElementById('tip');let down=null;
+renderer.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY}});
+renderer.domElement.addEventListener('pointerup',e=>{if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)<6){const it=pick(e);if(it)select(it.key,true)}down=null});
+let hoverEv=null;renderer.domElement.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')hoverEv=e});
+renderer.domElement.addEventListener('pointerleave',()=>{hoverEv=null;tip.hidden=true;renderer.domElement.classList.remove('hot')});
+
+function resize(){const w=viewer.clientWidth,h=viewer.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+new ResizeObserver(resize).observe(viewer);resize();
+goView('gen',true);select('mesa',false);
+
+const ease=x=>x*x*(3-2*x);
+function loop(now){
+  if(camAnim){const k=Math.min(1,(now-camAnim.s)/750),e=ease(k);camera.position.lerpVectors(camAnim.fp,camAnim.p,e);controls.target.lerpVectors(camAnim.ft,camAnim.t,e);if(k>=1)camAnim=null}
+  controls.update();renderer.render(scene,camera);
+  if(hoverEv){const it=pick(hoverEv);const r=renderer.domElement.getBoundingClientRect();
+    if(it){tip.hidden=false;tip.textContent=it.name;tip.style.left=(hoverEv.clientX-r.left)+'px';tip.style.top=(hoverEv.clientY-r.top)+'px';renderer.domElement.classList.add('hot')}
+    else{tip.hidden=true;renderer.domElement.classList.remove('hot')}hoverEv=null}
+  requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+})();
+</script>
+
+</body></html>
